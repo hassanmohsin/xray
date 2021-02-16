@@ -25,6 +25,11 @@ def pad_voxel_array(voxels):
     return vol, (new_shape[1], new_shape[2], new_shape[0])
 
 
+def get_material(stl_file):
+    object_name, ext = os.path.splitext(stl_file)
+    return object_name.split('_')[-1]
+
+
 def read_stl(input_file):
     return Mesh.from_file(input_file)
 
