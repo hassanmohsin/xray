@@ -34,7 +34,8 @@ def get_image_array(voxels, material):
 def stl_to_image(stl_file, vres, output_dir):
     mesh = read_stl(stl_file)
     material = get_material(stl_file)
-    # TODO: add random rotation to the mesh
+    # Random rotation of the mesh
+    mesh.rotate(np.random.random((3,)), np.random.uniform(30., 60.))
     voxels, _ = get_voxels(mesh, vres)
     image_array = get_image_array(voxels.sum(axis=2), material)
     return image_array
@@ -44,7 +45,7 @@ def draw_canvas(images, canvas):
     canvas_height, canvas_width = canvas.shape[:2]
     for image in images:
         # TODO: add random rotation to the image
-        # image = rescale(image, np.random.random() * 0.5 + 0.5)
+        # image = rotate(image, np.random.random() * 360, resize=True)
         h, w = image.shape[:2]
         ri, ci = np.random.randint(canvas_height - h), np.random.randint(canvas_width - w)
         # TODO: Find less crowded area of the canvas and place the image
@@ -70,7 +71,6 @@ def main(args):
     canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
     draw_canvas(images, canvas)
     canvas_image = Im.fromarray((canvas * 255.).astype(np.uint8))
-    # canvas_image.putalpha(200)
     canvas_image.save(f"{args.output}/canvas.png", tranparency=0)
 
 
