@@ -72,7 +72,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert STL files to false colored 2D image')
-    parser.add_argument('--input', type=dir_path, default="./stl_files", action='store',
+    parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")
     parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution")
     parser.add_argument('--width', type=int, default=512, action='store', help="Image width.")
