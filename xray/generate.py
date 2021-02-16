@@ -36,9 +36,15 @@ def stl_to_image(stl_file, vres, output_dir):
     material = get_material(stl_file)
     voxels, _ = get_voxels(mesh, vres)
     image_array = get_image_array(voxels.sum(axis=2), material)
-    image = Im.fromarray((image_array * 255.).astype(np.uint8))
-    image.putalpha(175)  # Transparent
-    image.save(f"./{output_dir}/{os.path.splitext(os.path.basename(stl_file))[0]}.png")
+    return image_array
+
+
+def draw_canvas(images, canvas):
+    canvas_height, canvas_width = canvas.shape[:2]
+    for image in images:
+        h, w = image.shape[:2]
+        ri, ci = np.random.randint(canvas_height - h), np.random.randint(canvas_width - w)
+        canvas[ri:ri + h, ci:ci + w, :] = image
 
 
 def main(args):
@@ -51,8 +57,17 @@ def main(args):
     if not os.path.isdir(args.output):
         os.makedirs(args.output)
 
+    # Get object images
     pool = mp.Pool(args.nproc)
-    pool.starmap(stl_to_image, zip(stl_files, repeat(args.vres), repeat(args.output)))
+    images = pool.starmap(stl_to_image, zip(stl_files, repeat(args.vres), repeat(args.output)))
+    pool.close()
+
+    # Draw canvas
+    canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
+    draw_canvas(images, canvas)
+    canvas_image = Im.fromarray((canvas * 255.).astype(np.uint8))
+    canvas_image.putalpha(200)
+    canvas_image.save(f"{args.output}/canvas.png", tranparency=0)
 
 
 if __name__ == '__main__':
@@ -60,8 +75,8 @@ if __name__ == '__main__':
     parser.add_argument('--input', type=dir_path, default="./stl_files", action='store',
                         help="Input directory containing .stl files.")
     parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution")
-    parser.add_argument('--width', type=int, default=1024, action='store', help="Image width.")
-    parser.add_argument('--height', type=int, default=768, action='store', help="Image height.")
+    parser.add_argument('--width', type=int, default=512, action='store', help="Image width.")
+    parser.add_argument('--height', type=int, default=512, action='store', help="Image height.")
     parser.add_argument('--count', type=int, default=1, action='store', help='Number of images.')
     parser.add_argument('--output', type=str, default="./output", action='store', help="Output directory.")
     parser.add_argument('--nproc', type=int, default=6, action='store', help="Number of CPUs to use.")
