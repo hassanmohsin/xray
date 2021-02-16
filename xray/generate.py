@@ -8,6 +8,7 @@ from itertools import repeat
 import numpy as np
 from PIL import Image as Im
 from matplotlib import colors
+from tqdm import tqdm
 
 from .config import material_constant, alpha
 from .util import dir_path, read_stl, get_voxels, get_material
@@ -41,7 +42,8 @@ def stl_to_image(stl_file, vres, output_dir):
     return image_array
 
 
-def draw_canvas(images, canvas):
+def draw_canvas(id, args, images):
+    canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
     canvas_height, canvas_width = canvas.shape[:2]
     for image in images:
         # TODO: add random rotation to the image
@@ -55,6 +57,9 @@ def draw_canvas(images, canvas):
         # TODO: Find less crowded area of the canvas and place the image
         canvas[ri:ri + h, ci:ci + w] = image * alpha + canvas[ri:ri + h, ci:ci + w] * (1 - alpha)
 
+    canvas_image = Im.fromarray((canvas * 255.).astype(np.uint8))
+    canvas_image.save(f"{args.output}/sample_{id}.png", tranparency=0)
+
 
 def main(args):
     # Load .stl files
@@ -67,15 +72,16 @@ def main(args):
         os.makedirs(args.output)
 
     # Get object images
+    print("LOG: Converting .stl files...")
     pool = mp.Pool(args.nproc)
     images = pool.starmap(stl_to_image, zip(stl_files, repeat(args.vres), repeat(args.output)))
     pool.close()
 
     # Draw canvas
-    canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
-    draw_canvas(images, canvas)
-    canvas_image = Im.fromarray((canvas * 255.).astype(np.uint8))
-    canvas_image.save(f"{args.output}/canvas.png", tranparency=0)
+    print("LOG: Generating false-color images...")
+    pool = mp.Pool(args.nproc)
+    pool.starmap(draw_canvas, tqdm(zip(range(args.count), repeat(args), repeat(images)), total=args.count))
+    pool.close()
 
 
 if __name__ == '__main__':
@@ -85,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution")
     parser.add_argument('--width', type=int, default=512, action='store', help="Image width.")
     parser.add_argument('--height', type=int, default=512, action='store', help="Image height.")
-    parser.add_argument('--count', type=int, default=1, action='store', help='Number of images.')
+    parser.add_argument('--count', type=int, default=100, action='store', help='Number of images.')
     parser.add_argument('--output', type=str, default="./output", action='store', help="Output directory.")
     parser.add_argument('--nproc', type=int, default=12, action='store', help="Number of CPUs to use.")
     args = parser.parse_args()
