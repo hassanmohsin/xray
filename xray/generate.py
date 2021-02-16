@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image as Im
 from matplotlib import colors
 
-from .config import material_constant
+from .config import material_constant, alpha
 from .util import dir_path, read_stl, get_voxels, get_material
 
 
@@ -34,6 +34,7 @@ def get_image_array(voxels, material):
 def stl_to_image(stl_file, vres, output_dir):
     mesh = read_stl(stl_file)
     material = get_material(stl_file)
+    # TODO: add random rotation to the mesh
     voxels, _ = get_voxels(mesh, vres)
     image_array = get_image_array(voxels.sum(axis=2), material)
     return image_array
@@ -42,9 +43,12 @@ def stl_to_image(stl_file, vres, output_dir):
 def draw_canvas(images, canvas):
     canvas_height, canvas_width = canvas.shape[:2]
     for image in images:
+        # TODO: add random rotation to the image
+        # image = rescale(image, np.random.random() * 0.5 + 0.5)
         h, w = image.shape[:2]
         ri, ci = np.random.randint(canvas_height - h), np.random.randint(canvas_width - w)
-        canvas[ri:ri + h, ci:ci + w, :] = image
+        # TODO: Find less crowded area of the canvas and place the image
+        canvas[ri:ri + h, ci:ci + w] = image * alpha + canvas[ri:ri + h, ci:ci + w] * (1 - alpha)
 
 
 def main(args):
@@ -66,7 +70,7 @@ def main(args):
     canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
     draw_canvas(images, canvas)
     canvas_image = Im.fromarray((canvas * 255.).astype(np.uint8))
-    canvas_image.putalpha(200)
+    # canvas_image.putalpha(200)
     canvas_image.save(f"{args.output}/canvas.png", tranparency=0)
 
 

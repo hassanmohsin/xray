@@ -4,3 +4,5 @@ material_constant = {
     'plastic': [0.09, 0.12],
     'cloth': [0.1, 0.11]
 }
+
+alpha = 0.7
