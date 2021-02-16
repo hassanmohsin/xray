@@ -51,11 +51,8 @@ def main(args):
     if not os.path.isdir(args.output):
         os.makedirs(args.output)
 
-    pool = mp.Pool(6)
+    pool = mp.Pool(args.nproc)
     pool.starmap(stl_to_image, zip(stl_files, repeat(args.vres), repeat(args.output)))
-    # print(stl_files)
-    # stl_to_image(stl_files[18], args.vres)
-    # image.save(os.path.join(args.output, "image.png"))
 
 
 if __name__ == '__main__':
@@ -67,5 +64,6 @@ if __name__ == '__main__':
     parser.add_argument('--height', type=int, default=768, action='store', help="Image height.")
     parser.add_argument('--count', type=int, default=1, action='store', help='Number of images.')
     parser.add_argument('--output', type=str, default="./output", action='store', help="Output directory.")
+    parser.add_argument('--nproc', type=int, default=6, action='store', help="Number of CPUs to use.")
     args = parser.parse_args()
     main(args)
