@@ -47,7 +47,11 @@ def draw_canvas(images, canvas):
         # TODO: add random rotation to the image
         # image = rotate(image, np.random.random() * 360, resize=True)
         h, w = image.shape[:2]
-        ri, ci = np.random.randint(canvas_height - h), np.random.randint(canvas_width - w)
+        try:
+            ri, ci = np.random.randint(canvas_height - h), np.random.randint(canvas_width - w)
+        except:
+            print(f"Object is larger than the canvas. Increase the canvas size. Object size: ({h}, {w})")
+            continue
         # TODO: Find less crowded area of the canvas and place the image
         canvas[ri:ri + h, ci:ci + w] = image * alpha + canvas[ri:ri + h, ci:ci + w] * (1 - alpha)
 
@@ -75,7 +79,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert STL files to false colored 2D image')
+    parser = argparse.ArgumentParser(description='Convert STL files to false colored xray image')
     parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")
     parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution")
@@ -83,6 +87,6 @@ if __name__ == '__main__':
     parser.add_argument('--height', type=int, default=512, action='store', help="Image height.")
     parser.add_argument('--count', type=int, default=1, action='store', help='Number of images.')
     parser.add_argument('--output', type=str, default="./output", action='store', help="Output directory.")
-    parser.add_argument('--nproc', type=int, default=6, action='store', help="Number of CPUs to use.")
+    parser.add_argument('--nproc', type=int, default=12, action='store', help="Number of CPUs to use.")
     args = parser.parse_args()
     main(args)
