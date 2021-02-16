@@ -85,14 +85,16 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert STL files to false colored xray image')
+    parser = argparse.ArgumentParser(description='Convert STL files to false-color xray images')
     parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")
-    parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution")
-    parser.add_argument('--width', type=int, default=512, action='store', help="Image width.")
-    parser.add_argument('--height', type=int, default=512, action='store', help="Image height.")
-    parser.add_argument('--count', type=int, default=100, action='store', help='Number of images.')
-    parser.add_argument('--output', type=str, default="./output", action='store', help="Output directory.")
-    parser.add_argument('--nproc', type=int, default=12, action='store', help="Number of CPUs to use.")
+    parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution (default: 100)")
+    parser.add_argument('--width', type=int, default=512, action='store', help="Image width  (default: 512)")
+    parser.add_argument('--height', type=int, default=512, action='store', help="Image height (default: 512)")
+    parser.add_argument('--count', type=int, default=100, action='store',
+                        help='Number of samples to generate (default: 100)')
+    parser.add_argument('--output', type=str, default="./output", action='store',
+                        help="Output directory (default: output)")
+    parser.add_argument('--nproc', type=int, default=12, action='store', help="Number of CPUs to use. (default: 12)")
     args = parser.parse_args()
     main(args)
