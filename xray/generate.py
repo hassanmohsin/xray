@@ -100,7 +100,7 @@ def main(args):
     pool.close()
 
 
-if __name__ == '__main__':
+def argument_parser():
     parser = argparse.ArgumentParser(description='Convert STL files to false-color xray images')
     parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")

@@ -12,10 +12,10 @@ Convert 3D models to false color x-ray images. Supported file format: `.stl`
 
 
 ## Usage
-- `python -m xray.generate --help`
+- `python -m xray --help`
 
     ```bash
-    usage: generate.py [-h] --input INPUT [--vres VRES] [--width WIDTH]
+    usage: __main__.py [-h] --input INPUT [--vres VRES] [--width WIDTH]
                        [--height HEIGHT] [--count COUNT] [--output OUTPUT]
                        [--nproc NPROC]
     
