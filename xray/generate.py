@@ -72,10 +72,9 @@ def draw_canvas(id, args, images):
         except:
             print(f"Object is larger than the canvas. Increase the canvas size. Object size: ({h}, {w})")
             continue
-        # TODO: Find less crowded area of the canvas and place the image
-
         canvas.paste(image, (ri, ci), mask=image)
-    canvas.save(f"{args.output}/sample_{id}.png", tranparency=1)
+    canvas.putalpha(255)
+    canvas.save(f"{args.output}/sample_{id}.png", tranparency=0)
 
 
 def main(args):
