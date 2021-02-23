@@ -16,7 +16,7 @@ def lines_to_voxels(line_list, pixels):
                         pixels[x][y] = True
 
         if is_black:
-            print("an error has occurred at x%sz%s" % (x, line_list[0][0][2]))
+            print("an error has occurred at x:%d, z:%d" % (x, line_list[0][0][2]))
 
 
 def find_relevant_lines(line_list, x, ind=0):
