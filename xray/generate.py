@@ -32,7 +32,7 @@ def get_image_array(voxels, material):
     return colors.hsv_to_rgb(layer_im)
 
 
-def stl_to_image(stl_file, vres, output_dir):
+def stl_to_image(stl_file, vres):
     print(f"LOG: {stl_file}...")
     mesh = read_stl(stl_file)
     material = get_material(stl_file)
@@ -90,7 +90,7 @@ def main(args):
     # Get object images
     print("LOG: Converting .stl files...")
     pool = mp.Pool(args.nproc)
-    images = pool.starmap(stl_to_image, zip(stl_files, repeat(args.vres), repeat(args.output)))
+    images = pool.starmap(stl_to_image, zip(stl_files, repeat(args.vres)))
     pool.close()
 
     # Draw canvas
