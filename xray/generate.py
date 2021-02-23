@@ -10,7 +10,7 @@ from PIL import Image as Im
 from matplotlib import colors
 from tqdm import tqdm
 
-from .config import material_constant, alpha
+from .config import material_constant
 from .util import dir_path, read_stl, get_voxels, get_material
 
 
@@ -33,6 +33,7 @@ def get_image_array(voxels, material):
 
 
 def stl_to_image(stl_file, vres, output_dir):
+    print(f"LOG: {stl_file}...")
     mesh = read_stl(stl_file)
     material = get_material(stl_file)
     # Random rotation of the mesh
@@ -42,23 +43,39 @@ def stl_to_image(stl_file, vres, output_dir):
     return image_array
 
 
+# TODO: Remove for loop, use Pillow.
+def remove_background(image):
+    # Transparency
+    new_image = []
+    for item in image.getdata():
+        if item[:3] == (255, 255, 255):
+            new_image.append((255, 255, 255, 0))
+        else:
+            new_image.append(item[:3] + (128,))
+
+    image.putdata(new_image)
+    return image
+
+
 def draw_canvas(id, args, images):
-    canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
-    canvas_height, canvas_width = canvas.shape[:2]
+    # canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
+    canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
+    # canvas_height, canvas_width = canvas.shape[:2]
     for image in images:
-        # TODO: add random rotation to the image
-        # image = rotate(image, np.random.random() * 360, resize=True)
         h, w = image.shape[:2]
+        image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
+        remove_background(image)
+
+        # TODO: add random rotation to the image
         try:
-            ri, ci = np.random.randint(canvas_height - h), np.random.randint(canvas_width - w)
+            ri, ci = np.random.randint(args.height - h), np.random.randint(args.width - w)
         except:
             print(f"Object is larger than the canvas. Increase the canvas size. Object size: ({h}, {w})")
             continue
         # TODO: Find less crowded area of the canvas and place the image
-        canvas[ri:ri + h, ci:ci + w] = image * alpha + canvas[ri:ri + h, ci:ci + w] * (1 - alpha)
 
-    canvas_image = Im.fromarray((canvas * 255.).astype(np.uint8))
-    canvas_image.save(f"{args.output}/sample_{id}.png", tranparency=0)
+        canvas.paste(image, (ri, ci), mask=image)
+    canvas.save(f"{args.output}/sample_{id}.png", tranparency=1)
 
 
 def main(args):
