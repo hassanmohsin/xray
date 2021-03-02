@@ -8,6 +8,7 @@ from itertools import repeat
 import numpy as np
 from PIL import Image as Im
 from matplotlib import colors
+from skimage.transform import rotate
 from tqdm import tqdm
 
 from .config import material_constant
@@ -63,6 +64,7 @@ def draw_canvas(id, args, images):
     # canvas_height, canvas_width = canvas.shape[:2]
     for image in images:
         h, w = image.shape[:2]
+        image = rotate(image, angle=np.random.randint(0, 360), resize=True, cval=1, mode='constant')
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
 

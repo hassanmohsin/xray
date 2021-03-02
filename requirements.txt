@@ -41,3 +41,4 @@ urllib3==1.25.8
 webencodings==0.5.1
 wincertstore==0.2
 zipp==3.4.0
+scikit-image==0.18.1
