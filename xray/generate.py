@@ -55,7 +55,6 @@ def remove_background(image):
             new_image.append(item[:3] + (128,))
 
     image.putdata(new_image)
-    return image
 
 
 def draw_canvas(id, args, images):
