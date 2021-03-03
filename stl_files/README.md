@@ -1,7 +1,7 @@
 # STL files
 Following are the objects in this directory:
 
-| Filename            | Material Type |
+| Object              | Material Type |
 |---------------------|---------------|
 | 15mm_cube           | plastic       |
 | bearing_guide       | metal         |
