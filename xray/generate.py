@@ -33,15 +33,21 @@ def get_image_array(voxels, material):
     return colors.hsv_to_rgb(layer_im)
 
 
-def stl_to_image(stl_file, vres):
+def stl_to_image(stl_file, args):
     print(f"LOG: {stl_file}...")
-    mesh = read_stl(stl_file)
     material = get_material(stl_file)
-    # Random rotation of the mesh
-    mesh.rotate(np.random.random((3,)), np.random.uniform(30., 60.))
-    voxels, _ = get_voxels(mesh, vres)
-    image_array = get_image_array(voxels.sum(axis=2), material)
-    return image_array
+    voxel_file = os.path.join("./temp", f"{os.path.split(stl_file)[1]}_{args.vres}.npy")
+    if os.path.isfile(voxel_file):
+        voxels = np.load(voxel_file)
+        return get_image_array(voxels.sum(axis=2), material)
+    else:
+        mesh = read_stl(stl_file)
+        # Random rotation of the mesh
+        mesh.rotate(np.random.random((3,)), np.random.uniform(30., 60.))
+        voxels, _ = get_voxels(mesh, args.vres)
+        if args.caching:
+            np.save(voxel_file[:-4], voxels)
+        return get_image_array(voxels.sum(axis=2), material)
 
 
 # TODO: Remove for loop, use Pillow.
@@ -64,6 +70,7 @@ def draw_canvas(id, args, images):
     for image in images:
         h, w = image.shape[:2]
         image = rotate(image, angle=np.random.randint(0, 360), resize=True, cval=1, mode='constant')
+        # image = rescale(image, scale=1.5, anti_aliasing=False)
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
 
@@ -88,10 +95,14 @@ def main(args):
     if not os.path.isdir(args.output):
         os.makedirs(args.output)
 
+    if args.caching:
+        if not os.path.isdir("./temp"):
+            os.makedirs("./temp")
+
     # Get object images
     print("LOG: Converting .stl files...")
     pool = mp.Pool(args.nproc)
-    images = pool.starmap(stl_to_image, zip(stl_files, repeat(args.vres)))
+    images = pool.starmap(stl_to_image, zip(stl_files, repeat(args)))
     pool.close()
 
     # Draw canvas
@@ -105,13 +116,15 @@ def argument_parser():
     parser = argparse.ArgumentParser(description='Convert STL files to false-color xray images')
     parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")
-    parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution (default: 100)")
-    parser.add_argument('--width', type=int, default=512, action='store', help="Image width  (default: 512)")
-    parser.add_argument('--height', type=int, default=512, action='store', help="Image height (default: 512)")
+    parser.add_argument('--vres', type=int, default=200, action='store', help="Voxel resolution (default: 100)")
+    parser.add_argument('--width', type=int, default=1024, action='store', help="Image width  (default: 512)")
+    parser.add_argument('--height', type=int, default=768, action='store', help="Image height (default: 512)")
     parser.add_argument('--count', type=int, default=100, action='store',
                         help='Number of samples to generate (default: 100)')
     parser.add_argument('--output', type=str, default="./output", action='store',
                         help="Output directory (default: output)")
     parser.add_argument('--nproc', type=int, default=12, action='store', help="Number of CPUs to use. (default: 12)")
+    parser.add_argument('--caching', type=int, default=1, action='store',
+                        help="Enable (1) or disable (0) caching. (default: 1)")
     args = parser.parse_args()
     main(args)
