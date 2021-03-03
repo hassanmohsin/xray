@@ -69,8 +69,10 @@ Following are the objects in `stl_files` directory:
 Naming convention: `<object_name>_<material_type>.stl`
 
 ## Parameters
-- Voxel resolution (`vres`) and scaling: Voxel resolution is the number of slices along X and Y axis. Slices required along Z axis is calculated using the resolution and the scale in X-Y plane ($$\Delta Z \times (\frac{resolution}{\max{\Delta X, \Delta Y}})$$). Standard resolution of the voxels is 100 (unit) that provides faster image generation. However, it can be varied between 50 to 500 or until the RAM memory gets exhausted. It is recommended to enable `caching` when a higher resolution is used. The scale of the objects is automatically calculated depending on the voxel resolution. Increase the `width` and `height` to contain all the objects.
+- Voxel resolution (`vres`): Voxel resolution is the number of slices along X and Y axis. Slices along Z axis is calculated using the resolution and the scale in X-Y plane ($$\Delta Z \times (\frac{resolution}{\max{\Delta X, \Delta Y}})$$). Standard resolution of the voxels is 100 (unit) that provides faster image generation. However, it can be varied between 50 to 500 or until the RAM memory gets exhausted. It is recommended to enable `caching` when a higher resolution is used. The scale of the objects is automatically calculated depending on the voxel resolution. Increase the `width` and `height` to contain all the objects.
+- Scale: Scale is determined from the voxel resolution and the size of the 3D object. It can not be modified.
 - Rotation: 3D objects are rotated along any random axis with an angle between 30 to 60 degrees. 2D images are also rotated along z-axis with an angle between 0 to 360 degrees.
+- Translation: Translation of the 2D images is random within `width` and `height`.
 
 ### Known issues:
 - When `caching` is enabled, random rotation of the 3D objects is disabled. However, 2D images are still rotated.
