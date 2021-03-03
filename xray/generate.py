@@ -116,7 +116,7 @@ def argument_parser():
     parser = argparse.ArgumentParser(description='Convert STL files to false-color xray images')
     parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")
-    parser.add_argument('--vres', type=int, default=200, action='store', help="Voxel resolution (default: 100)")
+    parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution (default: 100)")
     parser.add_argument('--width', type=int, default=1024, action='store', help="Image width  (default: 512)")
     parser.add_argument('--height', type=int, default=768, action='store', help="Image height (default: 512)")
     parser.add_argument('--count', type=int, default=100, action='store',
