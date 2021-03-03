@@ -73,8 +73,6 @@ def draw_canvas(id, args, images):
         # image = rescale(image, scale=1.5, anti_aliasing=False)
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
-
-        # TODO: add random rotation to the image
         try:
             ri, ci = np.random.randint(args.height - h), np.random.randint(args.width - w)
         except:
