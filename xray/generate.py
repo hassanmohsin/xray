@@ -71,25 +71,21 @@ def draw_canvas(id, args, images):
     for image in images:
         h, w = image.shape[:2]
         # skip if the object size is greater than the canvas
-        if args.height - h < 0 or args.width - w < 0:
+        if args.height - h <= 0 or args.width - w <= 0:
             continue
         image = rotate(image, angle=np.random.randint(0, 360), resize=True, cval=1, mode='constant')
         # image = rescale(image, scale=1.5, anti_aliasing=False)
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
-        # choose the location with least overlap
-        m_min = 2
-        for i in range(20):
-            ri, ci = np.random.randint(args.height - h), np.random.randint(args.width - w)
-            background = canvas_ar[ri:ri + args.height, ci:ci + args.width]
-            mask_background = np.amax(background, axis=2) > 0.001
-            m = mask_background.mean()
-            if m < m_min:
-                r, c = ri, ci
-                m_min = m
-                if m < 0.1:
-                    break
-        canvas.paste(image, (r, c), mask=image)
+        # Choose uniformly distributed centers
+        N = 1000  # number of samples
+        buffer = 10
+        xi, yi = np.random.randint(0, args.height - buffer, N), np.random.randint(0, args.width - buffer, N)
+        for (r, c) in zip(xi, yi):
+            if args.height - r < h or args.width - c < w:
+                continue
+            canvas.paste(image, (r, c), mask=image)
+            break
     canvas.putalpha(255)
     canvas.save(f"{args.output}/sample_{id}.png", tranparency=0)
 
