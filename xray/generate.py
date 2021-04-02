@@ -1,6 +1,7 @@
 import argparse
 import multiprocessing as mp
 import os
+import random
 import sys
 from glob import glob
 from itertools import repeat
@@ -12,6 +13,7 @@ from skimage.transform import rotate
 from tqdm import tqdm
 
 from .config import material_constant
+from .poisson_disc import poissonDisc
 from .util import dir_path, read_stl, get_voxels, get_material
 
 
@@ -66,10 +68,9 @@ def remove_background(image):
 def draw_canvas(id, args, images):
     # canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
     canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
-    canvas_ar = np.array(canvas)
-    # canvas_height, canvas_width = canvas.shape[:2]
+    center_points = poissonDisc(args.width, args.height, 100, 100)  # poissonDisc(width, height, min_distance, iter)
     for image in images:
-        h, w = image.shape[:2]
+        w, h = image.shape[:2]
         # skip if the object size is greater than the canvas
         if args.height - h <= 0 or args.width - w <= 0:
             continue
@@ -77,14 +78,15 @@ def draw_canvas(id, args, images):
         # image = rescale(image, scale=1.5, anti_aliasing=False)
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
-        # Choose uniformly distributed centers
-        N = 1000  # number of samples
-        buffer = 10
-        xi, yi = np.random.randint(0, args.height - buffer, N), np.random.randint(0, args.width - buffer, N)
-        for (r, c) in zip(xi, yi):
-            if args.height - r < h or args.width - c < w:
+        for i in range(20):
+            if len(center_points) < 2:
+                center_points = poissonDisc(args.width, args.height, 100, 100)
+            ind = random.randrange(len(center_points))
+            r, c = center_points[ind]
+            center_points.pop(ind)
+            if args.width - r < w or args.height - c < h:
                 continue
-            canvas.paste(image, (r, c), mask=image)
+            canvas.paste(image, (int(r), int(c)), mask=image)
             break
     canvas.putalpha(255)
     canvas.save(f"{args.output}/sample_{id}.png", tranparency=0)
