@@ -66,19 +66,30 @@ def remove_background(image):
 def draw_canvas(id, args, images):
     # canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
     canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
+    canvas_ar = np.array(canvas)
     # canvas_height, canvas_width = canvas.shape[:2]
     for image in images:
         h, w = image.shape[:2]
+        # skip if the object size is greater than the canvas
+        if args.height - h < 0 or args.width - w < 0:
+            continue
         image = rotate(image, angle=np.random.randint(0, 360), resize=True, cval=1, mode='constant')
         # image = rescale(image, scale=1.5, anti_aliasing=False)
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
-        try:
+        # choose the location with least overlap
+        m_min = 2
+        for i in range(20):
             ri, ci = np.random.randint(args.height - h), np.random.randint(args.width - w)
-        except:
-            print(f"Object is larger than the canvas. Increase the canvas size. Object size: ({h}, {w})")
-            continue
-        canvas.paste(image, (ri, ci), mask=image)
+            background = canvas_ar[ri:ri + args.height, ci:ci + args.width]
+            mask_background = np.amax(background, axis=2) > 0.001
+            m = mask_background.mean()
+            if m < m_min:
+                r, c = ri, ci
+                m_min = m
+                if m < 0.1:
+                    break
+        canvas.paste(image, (r, c), mask=image)
     canvas.putalpha(255)
     canvas.save(f"{args.output}/sample_{id}.png", tranparency=0)
 
