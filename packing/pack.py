@@ -8,17 +8,39 @@ from xray.util import read_stl, get_voxels
 
 if __name__ == '__main__':
     # Get the box and split
-    x, y, z, dx, dy, dz = 0, 0, 0, 100, 100, 100  # Initial box location and size, box = [x,y,z,dx,dy,dz]
+    x, y, z, dx, dy, dz = 0, 0, 0, 200, 200, 200  # Initial box location and size, box = [x,y,z,dx,dy,dz]
+    sphere_size = 100
     box = np.array([x, y, z, dx, dy, dz], dtype=np.float32)
-    boxes = split_box(3, box, random_turn=False)
-    print(boxes)
+    # TODO: set a minimum threshold in split_box so that there is no size one box
+    mini_boxes = split_box(3, box, random_turn=False)
+    print(mini_boxes)
+
+    box = np.zeros((dx, dy, dz))
 
     # Get the sphere
-    mesh = read_stl("packing/sphere-50mm.stl")
-    voxels, _ = get_voxels(mesh, resolution=100)
-    voxels = zoom(voxels, (2, 2, 2))
-    image = get_image_array(voxels.sum(axis=2), material='plastic')
+    sphere = read_stl("packing/sphere-50mm.stl")
+    sph_voxels, _ = get_voxels(sphere, resolution=sphere_size)
+    del sphere
 
-    plt.figure()
-    plt.imshow(image)
-    plt.show()
+    # Get the sizes of each mini_boxes
+    sizes = abs(np.subtract(mini_boxes[:, 3:], mini_boxes[:, :3]))
+    shortest_size = np.argmin(sizes, axis=1)
+    mini_spheres = []
+    for i, sh_size in enumerate(shortest_size):
+        # get the zoom factor
+        factor = sizes[i][sh_size] / sph_voxels.shape[sh_size]
+        # zoom in/out
+        mini_sphere = zoom(sph_voxels, (factor, factor, factor))
+        mini_spheres.append(mini_sphere)
+        print(mini_sphere.shape)
+
+    # Place the mini spheres into the big box
+    # start from the origin of each mini spheres
+
+    plt.close('all')
+    for vox in mini_spheres:
+        image = get_image_array(vox.sum(axis=2), material='plastic')
+
+        plt.figure()
+        plt.imshow(image)
+        plt.show()
