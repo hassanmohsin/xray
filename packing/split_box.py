@@ -29,3 +29,4 @@ if __name__ == "__main__":
         plt.tight_layout()
         for i in range(nrows):
             b = split_box(ax[i], n, 0, 0, 2000, 1000, min_split_size=300)
+        plt.show()
