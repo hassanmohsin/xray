@@ -12,7 +12,7 @@ if __name__ == '__main__':
     sphere_size = 100
     box = np.array([x, y, z, dx, dy, dz], dtype=np.float32)
     # TODO: set a minimum threshold in split_box so that there is no size one box
-    mini_boxes = split_box(3, box, random_turn=False)
+    mini_boxes = np.ceil(split_box(3, box, random_turn=False)).astype('int')
     print(mini_boxes)
 
     box = np.zeros((dx, dy, dz))
@@ -31,16 +31,17 @@ if __name__ == '__main__':
         factor = sizes[i][sh_size] / sph_voxels.shape[sh_size]
         # zoom in/out
         mini_sphere = zoom(sph_voxels, (factor, factor, factor))
-        mini_spheres.append(mini_sphere)
-        print(mini_sphere.shape)
+        p, q, r = mini_boxes[i][:3]
+        s, t, u = mini_boxes[i][:3] + mini_sphere.shape
+        box[p:s, q:t, r:u] = mini_sphere
 
-    # Place the mini spheres into the big box
-    # start from the origin of each mini spheres
-
-    plt.close('all')
-    for vox in mini_spheres:
-        image = get_image_array(vox.sum(axis=2), material='plastic')
-
-        plt.figure()
-        plt.imshow(image)
-        plt.show()
+    plt.figure()
+    plt.imshow(get_image_array(box.sum(axis=2), material='plastic'))
+    plt.show()
+    # plt.close('all')
+    # for vox in mini_spheres:
+    #     image = get_image_array(vox.sum(axis=2), material='plastic')
+    #
+    #     plt.figure()
+    #     plt.imshow(image)
+    #     plt.show()
