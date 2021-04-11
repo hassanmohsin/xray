@@ -8,13 +8,11 @@ from xray.util import read_stl, get_voxels
 
 if __name__ == '__main__':
     # Get the box and split
-    x, y, z, dx, dy, dz = 0, 0, 0, 200, 200, 200  # Initial box location and size, box = [x,y,z,dx,dy,dz]
+    x, y, z, dx, dy, dz = 0, 0, 0, 100, 100, 100  # Initial box location and size, box = [x,y,z,dx,dy,dz]
     sphere_size = 100
     box = np.array([x, y, z, dx, dy, dz], dtype=np.float32)
     # TODO: set a minimum threshold in split_box so that there is no size one box
     mini_boxes = np.ceil(split_box(3, box, random_turn=False)).astype('int')
-    print(mini_boxes)
-
     box = np.zeros((dx, dy, dz))
 
     # Get the sphere
@@ -23,12 +21,11 @@ if __name__ == '__main__':
     del sphere
 
     # Get the sizes of each mini_boxes
-    sizes = abs(np.subtract(mini_boxes[:, 3:], mini_boxes[:, :3]))
+    sizes = mini_boxes[:, 3:]
     shortest_size = np.argmin(sizes, axis=1)
-    mini_spheres = []
     for i, sh_size in enumerate(shortest_size):
         # get the zoom factor
-        factor = sizes[i][sh_size] / sph_voxels.shape[sh_size]
+        factor = (sizes[i][sh_size] - 1) / sph_voxels.shape[sh_size]  # subtract 1 to get rid of off-by-one error
         # zoom in/out
         mini_sphere = zoom(sph_voxels, (factor, factor, factor))
         p, q, r = mini_boxes[i][:3]
@@ -36,12 +33,10 @@ if __name__ == '__main__':
         box[p:s, q:t, r:u] = mini_sphere
 
     plt.figure()
-    plt.imshow(get_image_array(box.sum(axis=2), material='plastic'))
+    plt.imshow(get_image_array(box.sum(axis=0), material='plastic'))
     plt.show()
-    # plt.close('all')
-    # for vox in mini_spheres:
-    #     image = get_image_array(vox.sum(axis=2), material='plastic')
-    #
-    #     plt.figure()
-    #     plt.imshow(image)
-    #     plt.show()
+
+    # 3D plot (very slow, reduce sphere_size for faster execution
+    ax = plt.figure(figsize=(20, 20)).add_subplot(projection='3d')
+    ax.voxels(box, edgecolor='k')
+    plt.show()
