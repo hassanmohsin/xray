@@ -36,6 +36,7 @@ if __name__ == '__main__':
     plt.imshow(get_image_array(box.sum(axis=0), material='plastic'))
     plt.show()
 
+    # 3D plot (very slow, reduce sphere_size for faster execution
     ax = plt.figure(figsize=(20, 20)).add_subplot(projection='3d')
     ax.voxels(box, edgecolor='k')
     plt.show()
