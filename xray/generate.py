@@ -2,6 +2,7 @@ import argparse
 import math
 import multiprocessing as mp
 import os
+import random
 import sys
 from glob import glob
 from itertools import repeat
@@ -21,18 +22,27 @@ def get_image_array(voxels, material):
     assert material is not None
     if material not in material_constant.keys() or not material_constant[material]:
         raise NotImplementedError(f"Available objects are {list(material_constant.keys())}")
-    layer_im = np.zeros(voxels.shape + (3,))
 
-    hue_map = np.interp(voxels, np.linspace(voxels.min(), voxels.max(), 100),
-                        np.linspace(*material_constant[material], 100))
-    layer_im[..., 0] = hue_map
-    layer_im[..., 1] = 1.
-    layer_im[..., 2] = 1 - np.exp(-1 * voxels * 1e3)
+    material_const = np.array(material_constant[material])
+    # make 2 more by shifting the region to have variety in color
+    scale_shift = 0.03
+    material_consts = [material_const - scale_shift, material_const, material_const + scale_shift]
+    image_arrays = []
+    for const in material_consts:
+        layer_im = np.zeros(voxels.shape + (3,))
+        hue_map = np.interp(voxels,
+                            np.linspace(voxels.min(), voxels.max(), 100),
+                            np.linspace(*const, 100))
+        layer_im[..., 0] = hue_map
+        layer_im[..., 1] = 1.
+        layer_im[..., 2] = 1 - np.exp(-1 * voxels * 1e3)
 
-    layer_im[..., 1][voxels == 0.] = 0.  # Make background white
-    layer_im[..., 2][voxels == 0.] = 1.
+        layer_im[..., 1][voxels == 0.] = 0.  # Make background white
+        layer_im[..., 2][voxels == 0.] = 1.
 
-    return colors.hsv_to_rgb(layer_im)
+        image_arrays.append(colors.hsv_to_rgb(layer_im))
+
+    return image_arrays  # [random.randint(0, 2)]
 
 
 def stl_to_image(stl_file, args):
@@ -67,11 +77,12 @@ def remove_background(image):
 
 
 def draw_canvas(id, args, images):
-    # canvas = np.ones((args.height, args.width, 3), dtype=np.float32)
     canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
     center_points = poissonDisc(args.width, args.height, 90, 32)  # poissonDisc(width, height, min_distance, iter)
     for center, image in zip(center_points, images):
-        image = rotate(image, angle=np.random.randint(0, 360), resize=True, cval=1, mode='constant')
+        # Choose one of the images of the same object randomly and rotate
+        image = rotate(image[random.randint(0, 2)], angle=np.random.randint(0, 360), resize=True, cval=1,
+                       mode='constant')
         w, h = image.shape[:2]
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
