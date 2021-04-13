@@ -1,4 +1,5 @@
 import argparse
+import math
 import multiprocessing as mp
 import os
 import sys
@@ -38,17 +39,18 @@ def stl_to_image(stl_file, args):
     print(f"LOG: {stl_file}...")
     material = get_material(stl_file)
     voxel_file = os.path.join("./temp", f"{os.path.split(stl_file)[1]}_{args.vres}.npy")
-    if os.path.isfile(voxel_file):
+    if args.caching and os.path.isfile(voxel_file):
         voxels = np.load(voxel_file)
         return get_image_array(voxels.sum(axis=2), material)
-    else:
-        mesh = read_stl(stl_file)
-        # Random rotation of the mesh
-        mesh.rotate(np.random.random((3,)), np.random.uniform(30., 60.))
-        voxels, _ = get_voxels(mesh, args.vres)
-        if args.caching:
-            np.save(voxel_file[:-4], voxels)
-        return get_image_array(voxels.sum(axis=2), material)
+
+    mesh = read_stl(stl_file)
+    # Random rotation over x and y axis (rotation over z axis is done at image level)
+    mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
+    mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
+    voxels, _ = get_voxels(mesh, args.vres)
+    if args.caching:
+        np.save(voxel_file[:-4], voxels)
+    return get_image_array(voxels.sum(axis=2), material)
 
 
 # TODO: Remove for loop, use Pillow.
@@ -139,7 +141,7 @@ def argument_parser():
     parser.add_argument('--output', type=str, default="./output", action='store',
                         help="Output directory (default: output)")
     parser.add_argument('--nproc', type=int, default=12, action='store', help="Number of CPUs to use. (default: 12)")
-    parser.add_argument('--caching', type=int, default=1, action='store',
-                        help="Enable (1) or disable (0) caching. (default: 1)")
+    parser.add_argument('--caching', type=int, default=0, action='store',
+                        help="Enable (1) or disable (0) caching. (default: 0)")
     args = parser.parse_args()
     main(args)
