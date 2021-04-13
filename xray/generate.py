@@ -6,6 +6,7 @@ import random
 import sys
 from glob import glob
 from itertools import repeat
+import matplotlib.pyplot as plt
 
 import numpy as np
 from PIL import Image as Im
@@ -38,7 +39,7 @@ def get_image_array(voxels, material):
                                      np.linspace(voxels.min(), voxels.max(), 100),
                                      np.linspace(0, 1, 100))
         # intensity = 0.8
-        layer_im[..., 2] = 1 - np.exp(-1 * voxels * 1e3)
+        layer_im[..., 2] = 1.
         # layer_im[..., 2] = np.interp(intensity,
         #                              np.linspace(intensity.min(), intensity.max(), 100),
         #                              np.linspace(0, 1, 100))
@@ -85,7 +86,10 @@ def remove_background(image):
 
 def draw_canvas(id, args, images):
     canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
-    center_points = poissonDisc(args.width, args.height, 90, 32)  # poissonDisc(width, height, min_distance, iter)
+    center_points = poissonDisc(args.width,
+                                args.height,
+                                300,  # TODO: Remove this Hardcoded min-threshold
+                                50)  # poissonDisc(width, height, min_distance, iter)
     for center, image in zip(center_points, images):
         # Choose one of the images of the same object randomly and rotate
         image = rotate(image[random.randint(0, 2)], angle=np.random.randint(0, 360), resize=True, cval=1,
@@ -94,8 +98,11 @@ def draw_canvas(id, args, images):
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
         remove_background(image)
         r, c = center
-        if args.width - c < w or args.height - r < h:
-            r, c = np.random.uniform(args.width - w), np.random.uniform(args.height - h)
+        # place the center of the image to (r, c)
+        r = r - w // 2
+        c = c - c // 2
+        # if args.width - c < w or args.height - r < h:
+        #     r, c = np.random.uniform(args.width - w), np.random.uniform(args.height - h)
         canvas.paste(image, (int(r), int(c)), mask=image)
     # for image in images:
     #     w, h = image.shape[:2]
@@ -118,6 +125,7 @@ def draw_canvas(id, args, images):
     #         break
     canvas.putalpha(255)
     canvas.save(f"{args.output}/sample_{id}.png", tranparency=0)
+    del canvas
 
 
 def main(args):
