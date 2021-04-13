@@ -34,18 +34,24 @@ def get_image_array(voxels, material):
                             np.linspace(voxels.min(), voxels.max(), 100),
                             np.linspace(*const, 100))
         layer_im[..., 0] = hue_map
-        layer_im[..., 1] = 1.
+        layer_im[..., 1] = np.interp(voxels,
+                                     np.linspace(voxels.min(), voxels.max(), 100),
+                                     np.linspace(0, 1, 100))
+        # intensity = 0.8
         layer_im[..., 2] = 1 - np.exp(-1 * voxels * 1e3)
+        # layer_im[..., 2] = np.interp(intensity,
+        #                              np.linspace(intensity.min(), intensity.max(), 100),
+        #                              np.linspace(0, 1, 100))
 
         layer_im[..., 1][voxels == 0.] = 0.  # Make background white
         layer_im[..., 2][voxels == 0.] = 1.
 
         image_arrays.append(colors.hsv_to_rgb(layer_im))
 
-    return image_arrays  # [random.randint(0, 2)]
+    return image_arrays
 
 
-def stl_to_image(stl_file, args):
+def stl_to_image(stl_file, args, rotate=True):
     print(f"LOG: {stl_file}...")
     material = get_material(stl_file)
     voxel_file = os.path.join("./temp", f"{os.path.split(stl_file)[1]}_{args.vres}.npy")
@@ -55,8 +61,9 @@ def stl_to_image(stl_file, args):
 
     mesh = read_stl(stl_file)
     # Random rotation over x and y axis (rotation over z axis is done at image level)
-    mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
-    mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
+    if rotate:
+        mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
+        mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
     voxels, _ = get_voxels(mesh, args.vres)
     if args.caching:
         np.save(voxel_file[:-4], voxels)
@@ -144,9 +151,9 @@ def argument_parser():
     parser = argparse.ArgumentParser(description='Convert STL files to false-color xray images')
     parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")
-    parser.add_argument('--vres', type=int, default=100, action='store', help="Voxel resolution (default: 100)")
-    parser.add_argument('--width', type=int, default=512, action='store', help="Image width  (default: 512)")
-    parser.add_argument('--height', type=int, default=512, action='store', help="Image height (default: 512)")
+    parser.add_argument('--vres', type=int, default=20, action='store', help="Voxel resolution (default: 100)")
+    parser.add_argument('--width', type=int, default=2048, action='store', help="Image width  (default: 512)")
+    parser.add_argument('--height', type=int, default=2048, action='store', help="Image height (default: 512)")
     parser.add_argument('--count', type=int, default=100, action='store',
                         help='Number of samples to generate (default: 100)')
     parser.add_argument('--output', type=str, default="./output", action='store',
