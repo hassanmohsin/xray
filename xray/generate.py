@@ -38,7 +38,6 @@ def get_image_array(voxels, material):
         layer_im[..., 1] = np.interp(voxels,
                                      np.linspace(voxels.min(), voxels.max(), 100),
                                      np.linspace(0, 1, 100))
-        # intensity = 0.8
         layer_im[..., 2] = 1.
         # layer_im[..., 2] = np.interp(intensity,
         #                              np.linspace(intensity.min(), intensity.max(), 100),
@@ -88,11 +87,14 @@ def draw_canvas(id, args, images):
     canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
     center_points = poissonDisc(args.width,
                                 args.height,
-                                300,  # TODO: Remove this Hardcoded min-threshold
+                                400,  # TODO: Remove this Hardcoded min-threshold
                                 50)  # poissonDisc(width, height, min_distance, iter)
     for center, image in zip(center_points, images):
         # Choose one of the images of the same object randomly and rotate
-        image = rotate(image[random.randint(0, 2)], angle=np.random.randint(0, 360), resize=True, cval=1,
+        image = rotate(image[random.randint(0, 2)],
+                       angle=np.random.randint(0, 360),
+                       resize=True,
+                       cval=1,
                        mode='constant')
         w, h = image.shape[:2]
         image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
@@ -102,7 +104,8 @@ def draw_canvas(id, args, images):
         r = r - w // 2
         c = c - c // 2
         # if args.width - c < w or args.height - r < h:
-        #     r, c = np.random.uniform(args.width - w), np.random.uniform(args.height - h)
+        if r < 0 or r > args.width - w or c < 0 or c > args.height - h:
+            r, c = np.random.uniform(args.width - w), np.random.uniform(args.height - h)
         canvas.paste(image, (int(r), int(c)), mask=image)
     # for image in images:
     #     w, h = image.shape[:2]
