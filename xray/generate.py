@@ -7,6 +7,7 @@ import sys
 from glob import glob
 from itertools import repeat
 
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as Im
 from matplotlib import colors
@@ -16,7 +17,6 @@ from tqdm import tqdm
 from .config import material_constant
 from .poisson_disc import poissonDisc
 from .util import dir_path, read_stl, get_voxels, get_material
-import matplotlib.pyplot as plt
 
 
 def get_image_array(voxels, material):
@@ -86,9 +86,9 @@ def remove_background(image):
 
 def draw_canvas(id, args, images):
     canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
-    center_points = poissonDisc(args.width,
-                                args.height,
-                                350,  # TODO: Remove this Hardcoded min-threshold
+    center_points = poissonDisc(args.width - 200,
+                                args.height - 200,
+                                250,  # TODO: Remove this Hardcoded min-threshold
                                 50)  # poissonDisc(width, height, min_distance, iter)
     drawn_centers = []
     for center, image in zip(center_points, images):
@@ -104,41 +104,15 @@ def draw_canvas(id, args, images):
         xpos, ypos = center[0], center[1]
         if xpos + w >= args.width:
             xpos = args.width - w
-            print(f"xpos {xpos}, width {w}")
         if ypos + h >= args.height:
             ypos = args.height - h
-            print(f"ypos {ypos}, height {h}")
         drawn_centers.append([xpos, ypos])
-        # place the center of the image to (r, c)
-        # r = r - w // 2
-        # c = c - c // 2
-        # if args.width - c < w or args.height - r < h:
-        # if r < 0 or r > args.width - w or c < 0 or c > args.height - h:
-        #     r, c = np.random.uniform(args.width - w), np.random.uniform(args.height - h)
         canvas.paste(image, (int(xpos), int(ypos)), mask=image)
-    # for image in images:
-    #     w, h = image.shape[:2]
-    #     # skip if the object size is greater than the canvas
-    #     if args.height - h <= 0 or args.width - w <= 0:
-    #         continue
-    #     image = rotate(image, angle=np.random.randint(0, 360), resize=True, cval=1, mode='constant')
-    #     # image = rescale(image, scale=1.5, anti_aliasing=False)
-    #     image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
-    #     remove_background(image)
-    #     for i in range(20):
-    #         if len(center_points) < 2:
-    #             center_points = poissonDisc(args.width, args.height, 100, 100)
-    #         ind = random.randrange(len(center_points))
-    #         r, c = center_points[ind]
-    #         center_points.pop(ind)
-    #         if args.width - r < w or args.height - c < h:
-    #             continue
-    #         canvas.paste(image, (int(r), int(c)), mask=image)
-    #         break
     canvas.putalpha(255)
     canvas.save(f"{args.output}/sample_{id}.png", tranparency=0)
     del canvas
     plt.figure()
+    plt.gca().invert_yaxis()
     plt.title(f"Centers for {id}-th image")
     plt.scatter(*zip(*center_points), marker='o')
     plt.scatter(*zip(*drawn_centers), marker='*')
