@@ -29,16 +29,35 @@ def get_image_array(voxels, material):
     scale_shift = 0.03
     material_consts = [material_const - scale_shift, material_const, material_const + scale_shift]
     image_arrays = []
+    decay_constant = 0.005
+
+    def sat(x, k):
+        a = np.exp(-k * x)
+        a = a / np.exp(-k / 2)
+        a = 0.7 * np.minimum(1, a)
+        return a
+
     for const in material_consts:
         layer_im = np.zeros(voxels.shape + (3,))
-        hue_map = np.interp(voxels,
-                            np.linspace(voxels.min(), voxels.max(), 100),
-                            np.linspace(*const, 100))
-        layer_im[..., 0] = hue_map
-        layer_im[..., 1] = np.interp(voxels,
-                                     np.linspace(voxels.min(), voxels.max(), 100),
-                                     np.linspace(0, 1, 100))
-        layer_im[..., 2] = 1.
+        # Hue
+        layer_im[..., 0] = np.random.uniform(*const)
+
+        # Saturation
+        IIo = np.exp(-decay_constant * voxels)
+        # layer_im[..., 1] = sat(IIo, 4)  # TODO: k
+        layer_im[..., 1] = .7
+        # IIo = np.minimum(0.7, np.exp(-k * (IIo - .5)))
+        # layer_im[..., 1] = np.exp(- k * voxels / voxels.max())
+        # layer_im[..., 1] = saturation
+        # layer_im[..., 1] = layer_im[..., 1] / layer_im[..., 1].max() # TODO: Is it right?
+        # layer_im[..., 2] = np.interp(voxels,
+        #                              np.linspace(voxels.min(), voxels.max(), 100),
+        #                              np.linspace(0, 1, 100))
+
+        # Value
+        layer_im[..., 2] = IIo
+
+        # layer_im[..., 2] = 1.
         # layer_im[..., 2] = np.interp(intensity,
         #                              np.linspace(intensity.min(), intensity.max(), 100),
         #                              np.linspace(0, 1, 100))
