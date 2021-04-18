@@ -10,7 +10,6 @@ from itertools import repeat
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as Im
-from matplotlib import colors
 from skimage.transform import rotate
 from tqdm import tqdm
 
@@ -26,46 +25,15 @@ def get_image_array(voxels, material):
 
     material_const = np.array(material_constant[material])
     # make 2 more by shifting the region to have variety in color
-    scale_shift = 0.03
+    scale_shift = 0.1
     material_consts = [material_const - scale_shift, material_const, material_const + scale_shift]
     image_arrays = []
-    decay_constant = 0.005
-
-    def sat(x, k):
-        a = np.exp(-k * x)
-        a = a / np.exp(-k / 2)
-        a = 0.7 * np.minimum(1, a)
-        return a
+    decay_constant = 3
 
     for const in material_consts:
-        layer_im = np.zeros(voxels.shape + (3,))
-        # Hue
-        layer_im[..., 0] = np.random.uniform(*const)
-
-        # Saturation
-        IIo = np.exp(-decay_constant * voxels)
-        # layer_im[..., 1] = sat(IIo, 4)  # TODO: k
-        layer_im[..., 1] = .7
-        # IIo = np.minimum(0.7, np.exp(-k * (IIo - .5)))
-        # layer_im[..., 1] = np.exp(- k * voxels / voxels.max())
-        # layer_im[..., 1] = saturation
-        # layer_im[..., 1] = layer_im[..., 1] / layer_im[..., 1].max() # TODO: Is it right?
-        # layer_im[..., 2] = np.interp(voxels,
-        #                              np.linspace(voxels.min(), voxels.max(), 100),
-        #                              np.linspace(0, 1, 100))
-
-        # Value
-        layer_im[..., 2] = IIo
-
-        # layer_im[..., 2] = 1.
-        # layer_im[..., 2] = np.interp(intensity,
-        #                              np.linspace(intensity.min(), intensity.max(), 100),
-        #                              np.linspace(0, 1, 100))
-
-        layer_im[..., 1][voxels == 0.] = 0.  # Make background white
-        layer_im[..., 2][voxels == 0.] = 1.
-
-        image_arrays.append(colors.hsv_to_rgb(layer_im))
+        depth = np.expand_dims(voxels.sum(axis=2) / 255, axis=2) * np.array(const)
+        img = np.exp(-decay_constant * depth)
+        image_arrays.append(img)
 
     return image_arrays
 
@@ -76,7 +44,7 @@ def stl_to_image(stl_file, args, rotate=True):
     voxel_file = os.path.join("./temp", f"{os.path.split(stl_file)[1]}_{args.vres}.npy")
     if args.caching and os.path.isfile(voxel_file):
         voxels = np.load(voxel_file)
-        return get_image_array(voxels.sum(axis=2), material)
+        return get_image_array(voxels, material)
 
     mesh = read_stl(stl_file)
     # TODO: scale the mesh so that the image has reasonable dimension (xray/perimeter.py?)
@@ -87,7 +55,7 @@ def stl_to_image(stl_file, args, rotate=True):
     voxels, _ = get_voxels(mesh, args.vres)
     if args.caching:
         np.save(voxel_file[:-4], voxels)
-    return get_image_array(voxels.sum(axis=2), material)
+    return get_image_array(voxels, material)
 
 
 # TODO: Remove for loop, use Pillow.
@@ -104,9 +72,9 @@ def remove_background(image):
 
 
 def draw_canvas(id, args, images):
-    canvas = Im.new("RGBA", (args.width, args.height), color=(255, 255, 255))
-    center_points = poissonDisc(args.width - 200,
-                                args.height - 200,
+    canvas = np.ones((args.height, args.width, 3))
+    center_points = poissonDisc(args.height - 200,
+                                args.width - 200,
                                 250,  # TODO: Remove this Hardcoded min-threshold
                                 50)  # poissonDisc(width, height, min_distance, iter)
     drawn_centers = []
@@ -117,24 +85,29 @@ def draw_canvas(id, args, images):
                        resize=True,
                        cval=1,
                        mode='constant')
-        w, h = image.shape[:2]
-        image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
-        remove_background(image)
-        xpos, ypos = center[0], center[1]
-        if xpos + w >= args.width:
-            xpos = args.width - w
-        if ypos + h >= args.height:
-            ypos = args.height - h
-        drawn_centers.append([xpos, ypos])
-        canvas.paste(image, (int(xpos), int(ypos)), mask=image)
-    canvas.putalpha(255)
-    canvas.save(f"{args.output}/sample_{id}.png", tranparency=0)
-    del canvas
+        h, w = image.shape[:2]
+        # image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
+        # remove_background(image)
+        hpos, wpos = int(center[0]), int(center[1])
+        if hpos + h >= args.height:
+            hpos = args.height - h
+        if wpos + w >= args.width:
+            wpos = args.width - w
+        drawn_centers.append([wpos, hpos])
+        # canvas.paste(image, (int(xpos), int(ypos)), mask=image)
+        canvas[hpos:hpos+h, wpos:wpos+w] = canvas[hpos:hpos+h, wpos:wpos+w] * image
+    # canvas.putalpha(255)
     plt.figure()
-    plt.gca().invert_yaxis()
-    plt.title(f"Centers for {id}-th image")
-    plt.scatter(*zip(*center_points), marker='o')
-    plt.scatter(*zip(*drawn_centers), marker='*')
+    plt.tight_layout()
+    plt.imshow(canvas)
+    # plt.axis('off')
+    plt.savefig(f"{args.output}/sample_{id}.png", dpi=300)
+    del canvas
+    # plt.figure()
+    # plt.gca().invert_yaxis()
+    # plt.title(f"Centers for {id}-th image")
+    # plt.scatter(*zip(*center_points), marker='o')
+    # plt.scatter(*zip(*drawn_centers), marker='*')
     plt.show()
 
 

@@ -1,31 +1,9 @@
-# material_constant = {
-#     'metal': [0.45, 0.7],
-#     'knife': [0.25, 0.5],
-#     'plastic': [0.09, 0.12],
-#     'cloth': [0.1, 0.11]
-# }
-# green 0.24 - 0.27
-# orange 0.9 - 0.11
-
-# material_constant = {
-#     'metal': [0.60, 0.65],
-#     'knife': [0.45, 0.5],
-#     'plastic': [0.10, 0.12],
-#     'cloth': [0.1, 0.11]
-# }
-
 material_constant = {
-    'metal': [0.60, 0.65],
-    'knife': [0.45, 0.5],
-    'plastic': [0.08, 0.10],
-    'cloth': [0.1, 0.11],
-    'leather': [0.25, 0.35]
+    'metal': [0.9, 0.6, 0.3],  # blue (0, 0, 255)
+    'knife': [0.3, 0.6, 0.9],  # red (255, 0, 0)
+    'plastic': [0.3, 0.7, 0.9],  # orange(255, 165, 0)
+    'cloth': [0.1, 0.11],  # red orange (255, 69, 0)
+    'leather': [0.9, 0.3, 0.6]  # green (0, 255, 0)
 }
-# material_constant = {
-#     'metal': [0.65, 0.69],
-#     'knife': [0.45, 0.5],
-#     'plastic': [0.08, 0.12],
-#     'cloth': [0.1, 0.11]
-# }
 
 alpha = 0.7
