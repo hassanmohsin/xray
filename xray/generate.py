@@ -2,18 +2,16 @@ import argparse
 import math
 import multiprocessing as mp
 import os
-import random
 import sys
 from glob import glob
 from itertools import repeat
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image as Im
 from skimage.transform import rotate
 from tqdm import tqdm
 
-from .config import material_constant
+from .config import decay_constant, material_constant
 from .poisson_disc import poissonDisc
 from .util import dir_path, read_stl, get_voxels, get_material
 
@@ -22,20 +20,11 @@ def get_image_array(voxels, material):
     assert material is not None
     if material not in material_constant.keys() or not material_constant[material]:
         raise NotImplementedError(f"Available objects are {list(material_constant.keys())}")
-
-    material_const = np.array(material_constant[material])
-    # make 2 more by shifting the region to have variety in color
-    scale_shift = 0.1
-    material_consts = [material_const - scale_shift, material_const, material_const + scale_shift]
-    image_arrays = []
-    decay_constant = 3
-
-    for const in material_consts:
-        depth = np.expand_dims(voxels.sum(axis=2) / 255, axis=2) * np.array(const)
-        img = np.exp(-decay_constant * depth)
-        image_arrays.append(img)
-
-    return image_arrays
+    mat_const = -np.log(np.array(material_constant[material]))
+    mat_const = (mat_const / np.sqrt(np.sum(mat_const ** 2)))
+    depth = np.expand_dims(voxels.sum(axis=2) / 255, axis=2) * mat_const
+    img = np.exp(-decay_constant * depth)
+    return img
 
 
 def stl_to_image(stl_file, args, rotate=True):
@@ -80,23 +69,19 @@ def draw_canvas(id, args, images):
     drawn_centers = []
     for center, image in zip(center_points, images):
         # Choose one of the images of the same object randomly and rotate
-        image = rotate(image[random.randint(0, 2)],
+        image = rotate(image,
                        angle=np.random.randint(0, 360),
                        resize=True,
                        cval=1,
                        mode='constant')
         h, w = image.shape[:2]
-        # image = Im.fromarray((image * 255.).astype(np.uint8)).convert("RGBA")
-        # remove_background(image)
         hpos, wpos = int(center[0]), int(center[1])
         if hpos + h >= args.height:
             hpos = args.height - h
         if wpos + w >= args.width:
             wpos = args.width - w
         drawn_centers.append([wpos, hpos])
-        # canvas.paste(image, (int(xpos), int(ypos)), mask=image)
-        canvas[hpos:hpos+h, wpos:wpos+w] = canvas[hpos:hpos+h, wpos:wpos+w] * image
-    # canvas.putalpha(255)
+        canvas[hpos:hpos + h, wpos:wpos + w] = canvas[hpos:hpos + h, wpos:wpos + w] * image
     plt.figure()
     plt.tight_layout()
     plt.imshow(canvas)
@@ -108,7 +93,7 @@ def draw_canvas(id, args, images):
     # plt.title(f"Centers for {id}-th image")
     # plt.scatter(*zip(*center_points), marker='o')
     # plt.scatter(*zip(*drawn_centers), marker='*')
-    plt.show()
+    # plt.show()
 
 
 def main(args):
