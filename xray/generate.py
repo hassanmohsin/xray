@@ -27,10 +27,10 @@ def get_image_array(voxels, material):
     return img
 
 
-def stl_to_image(stl_file, args, rotate=True):
+def stl_to_image(stl_file, args):
     print(f"LOG: {stl_file}...")
     material = get_material(stl_file)
-    voxel_file = os.path.join("./temp", f"{os.path.split(stl_file)[1]}_{args.vres}.npy")
+    voxel_file = os.path.join("./temp", f"{os.path.split(stl_file)[1]}_{args.vres}_{args.rotate_mesh}.npy")
     if args.caching and os.path.isfile(voxel_file):
         voxels = np.load(voxel_file)
         return get_image_array(voxels, material)
@@ -38,7 +38,7 @@ def stl_to_image(stl_file, args, rotate=True):
     mesh = read_stl(stl_file)
     # TODO: scale the mesh so that the image has reasonable dimension (xray/perimeter.py?)
     # Random rotation over x and y axis (rotation over z axis is done at image level)
-    if rotate:
+    if args.rotate_mesh:
         mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
         mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
     voxels, _ = get_voxels(mesh, args.vres)
@@ -62,25 +62,26 @@ def remove_background(image):
 
 def draw_canvas(id, args, images):
     canvas = np.ones((args.height, args.width, 3))
-    center_points = poissonDisc(args.height - 200,
-                                args.width - 200,
-                                250,  # TODO: Remove this Hardcoded min-threshold
+    center_points = poissonDisc(args.width - 500,
+                                args.height - 500,
+                                200,  # TODO: Remove this Hardcoded min-threshold
                                 50)  # poissonDisc(width, height, min_distance, iter)
     drawn_centers = []
     for center, image in zip(center_points, images):
         # Choose one of the images of the same object randomly and rotate
-        image = rotate(image,
-                       angle=np.random.randint(0, 360),
-                       resize=True,
-                       cval=1,
-                       mode='constant')
+        if args.rotate_object:
+            image = rotate(image,
+                           angle=np.random.randint(0, 360),
+                           resize=True,
+                           cval=1,
+                           mode='constant')
         h, w = image.shape[:2]
         hpos, wpos = int(center[0]), int(center[1])
         if hpos + h >= args.height:
             hpos = args.height - h
         if wpos + w >= args.width:
             wpos = args.width - w
-        drawn_centers.append([wpos, hpos])
+        drawn_centers.append([hpos, wpos])
         canvas[hpos:hpos + h, wpos:wpos + w] = canvas[hpos:hpos + h, wpos:wpos + w] * image
     plt.figure()
     plt.tight_layout()
@@ -88,12 +89,12 @@ def draw_canvas(id, args, images):
     # plt.axis('off')
     plt.savefig(f"{args.output}/sample_{id}.png", dpi=300)
     del canvas
-    # plt.figure()
-    # plt.gca().invert_yaxis()
-    # plt.title(f"Centers for {id}-th image")
-    # plt.scatter(*zip(*center_points), marker='o')
-    # plt.scatter(*zip(*drawn_centers), marker='*')
-    # plt.show()
+    plt.figure()
+    plt.gca().invert_yaxis()
+    plt.title(f"Centers for {id}-th image")
+    plt.scatter(*zip(*center_points), marker='o')
+    plt.scatter(*zip(*drawn_centers), marker='*')
+    plt.show()
 
 
 def main(args):
@@ -127,11 +128,13 @@ def argument_parser():
     parser = argparse.ArgumentParser(description='Convert STL files to false-color xray images')
     parser.add_argument('--input', type=dir_path, required=True, action='store',
                         help="Input directory containing .stl files.")
-    parser.add_argument('--vres', type=int, default=20, action='store', help="Voxel resolution (default: 100)")
-    parser.add_argument('--width', type=int, default=2048, action='store', help="Image width  (default: 512)")
-    parser.add_argument('--height', type=int, default=2048, action='store', help="Image height (default: 512)")
-    parser.add_argument('--count', type=int, default=100, action='store',
-                        help='Number of samples to generate (default: 100)')
+    parser.add_argument('--vres', type=int, default=20, action='store', help="Voxel resolution (default: 20)")
+    parser.add_argument('--rotate-mesh', default=False, action='store_true', help="Rotate mesh")
+    parser.add_argument('--rotate-object', default=False, action='store_true', help='Rotate objects')
+    parser.add_argument('--width', type=int, default=1920, action='store', help="Image width  (default: 1920)")
+    parser.add_argument('--height', type=int, default=1080, action='store', help="Image height (default: 1080)")
+    parser.add_argument('--count', type=int, default=10, action='store',
+                        help='Number of samples to generate (default: 10)')
     parser.add_argument('--output', type=str, default="./output", action='store',
                         help="Output directory (default: output)")
     parser.add_argument('--nproc', type=int, default=12, action='store', help="Number of CPUs to use. (default: 12)")
