@@ -33,7 +33,7 @@ if __name__ == '__main__':
         box[p:s, q:t, r:u] = mini_sphere
 
     plt.figure()
-    plt.imshow(get_image_array(box.sum(axis=0), material='plastic'))
+    plt.imshow(get_image_array(box, material='plastic'))
     plt.show()
 
     # 3D plot (very slow, reduce sphere_size for faster execution
