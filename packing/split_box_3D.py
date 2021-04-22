@@ -2,8 +2,9 @@ import numpy as np
 
 
 def split_box(n, box, turn=0, min_split_frac=0.2, random_turn=False, min_dim_thr=10, vol_thr=4000):
-    min_dim = np.amin(box[3:])
-    vol = np.prod(box[3:])
+    sides = abs(box[3:] - box[:3])
+    min_dim = min(sides)
+    vol = np.prod(sides)
     if n > 0 and min_dim > min_dim_thr and vol > vol_thr:
         r = np.random.random() * (1 - 2 * min_split_frac) + min_split_frac
         box1 = np.copy(box)
