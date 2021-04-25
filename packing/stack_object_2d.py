@@ -61,19 +61,24 @@ if __name__ == '__main__':
     for i in range(object_count):
         # Create an arbitrarily-shaped 2D object
         len_x = np.random.randint(5, max_object_length)
+        # x1[0] bottom surface, x1[1] top surface
         x1 = exp_filter(np.random.normal(0, max_object_height, (2, len_x)), base_size // 10)
         x1 = np.int32(np.sort(x1, axis=0))
 
+        # Lower the bottom surface and connect the ends together n
         x1[0] -= 1
         x1[:, 0] = np.mean(x1[:, 0])
         x1[:, -1] = np.mean(x1[:, -1])
 
+        # Find the shortest distances between the bottom surface and the ground at all possible
+        #  position (sliding to the right and measuring)
         offsets = []
         for i in range(len(x0) - x1.shape[1] + 1):
             d = x1[0] - x0[i:i + x1.shape[1]]
             offset = np.amin(d)  # Shortest distance between the lowest part of the object (x1[0]) and the surface (x0)
             offsets.append(offset)
 
+        # Find the position where the distance to the ground is maximum (lowest level of the ground)
         a = np.argmax(np.array(offsets))
 
         x0[a:a + x1.shape[1]] = x1[1] - offsets[a]
