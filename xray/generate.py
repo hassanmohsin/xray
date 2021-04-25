@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from .config import decay_constant, material_constant
 from .poisson_disc import poissonDisc
-from .util import dir_path, read_stl, get_voxels, get_material
+from .util import dir_path, read_stl, get_voxels, get_material, crop_model
 
 
 def get_image_array(voxels, material, axis=2):
@@ -41,7 +41,7 @@ def stl_to_image(stl_file, args):
     if args.rotate_mesh:
         mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
         mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
-    voxels, _ = get_voxels(mesh, args.vres)
+    voxels, _ = crop_model(get_voxels(mesh, args.vres))
     if args.caching:
         np.save(voxel_file[:-4], voxels)
     return get_image_array(voxels, material)
