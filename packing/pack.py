@@ -20,7 +20,7 @@ def crop_model(voxels):
 
 if __name__ == '__main__':
     voxel_files = glob("../temp/*True.npy")
-    box_x, box_y, box_z = 1000, 1000, 1000
+    box_x, box_y, box_z = 2000, 2000, 2000
     box = np.zeros((box_x, box_y, box_z), dtype=np.bool)
 
     ground = np.zeros(box[..., 0].shape)  # Ground height
@@ -65,15 +65,15 @@ if __name__ == '__main__':
             break
 
     # Pack the box with objects
-    print(f"Found place for {len(positions)} objects, packing into the box...")
+    print(f"Found place for {len(positions)} objects, packing into the box of size {box.shape}...")
     elevation = np.zeros(box[..., 0].shape, dtype=np.int32)
     for voxel_file, position in zip(voxel_files, positions):
+        # TODO: Remove multiple loading of the same array
         voxels = crop_model(np.load(voxel_file))
         x, y = position[0]
         offset = int(position[1])
         height = np.max(elevation[x:x + voxels.shape[0], y:y + voxels.shape[1]])
         box[x:x + voxels.shape[0], y:y + voxels.shape[1], height + offset:height + offset + voxels.shape[2]] = voxels
-        # print(x, x+voxels.shape[0], y, y+voxels.shape[1], height+offset, height+offset+voxels.shape[2], voxels.shape)
         elevation[x:x + voxels.shape[0], y:y + voxels.shape[1]] = height + offset + voxels.shape[2]
 
     fig, ax = plt.subplots(2, 2, figsize=(20, 15))
