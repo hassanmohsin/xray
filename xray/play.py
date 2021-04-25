@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
-from .config import material_constant
+from .config import Material
 from .generate import get_image_array
 from .util import crop_model
 
 
 def get_material(s):
-    for const in material_constant.keys():
+    mat = Material()
+    for const in mat.material_constant.keys():
         if const in s:
             return const
 
@@ -34,7 +35,8 @@ def main():
 
     # *True.npy files are rotated and vice versa
     voxel_files = glob("./voxels_cropped/*True.npy")
-    box_x, box_y, box_z = 2000, 2000, 2000
+    # TODO: unequal sides of the box causes numpy shape mismatch error
+    box_x, box_y, box_z = 1000, 1000, 1000
     box = np.zeros((box_x, box_y, box_z), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
     canvases = [np.ones((box_y, box_z, 3)),
@@ -44,10 +46,10 @@ def main():
     ground = np.zeros(box[..., 0].shape)
     elevation = np.zeros(box[..., 0].shape, dtype=np.int32)
     gap = 20  # Minimum gap between object at (x, y) plane. (!)Lower gap increases runtime significantly.
-    positions = []
+    counter = 0
 
     print(f"Packing objects into the box of size {box.shape}...")
-    for voxel_file in tqdm(voxel_files):
+    for voxel_file in tqdm(voxel_files[:30]):
         # Get the material type
         material = get_material(voxel_file)
         # Load the model
@@ -81,22 +83,26 @@ def main():
         a = max(offsets, key=lambda x: x[2])
         # Subtract offset from the top surface
         ground[a[0]:a[0] + item.shape[0], a[1]:a[1] + item.shape[1]] = top_surface - a[2]
-        if np.max(ground) <= box.shape[2]:
-            # add the objects into the box
-            x, y = a[:2]
-            offset = int(a[2])
-            height = np.max(elevation[x:x + item.shape[0], y:y + item.shape[1]])
-            box[x:x + item.shape[0], y:y + item.shape[1], height + offset:height + offset + item.shape[2]] = item
-            elevation[x:x + item.shape[0], y:y + item.shape[1]] = height + offset + item.shape[2]
-            # Draw the object image on the canvas
-            xray_image = get_image_array(item, material, axis=2)
-            image_height, image_width = xray_image.shape[:2]
-            canvases[0][x:x + image_height, y:y + image_width] = canvases[0][x:x + image_height,
-                                                                 y:y + image_width] * xray_image
+        # add the objects into the box
+        x, y = a[:2]
+        offset = int(a[2])
+        height = np.max(elevation[x:x + item.shape[0], y:y + item.shape[1]])
+        offset = offset if offset >= 0 else 0
+        if height + offset + item.shape[2] > box.shape[2]:
+            # goes beyond the box if the object is placed, try the next one
+            continue
+        box[x:x + item.shape[0], y:y + item.shape[1], height + offset:height + offset + item.shape[2]] = item
+        elevation[x:x + item.shape[0], y:y + item.shape[1]] = height + offset + item.shape[2]
+        # Draw the object image on the canvas
+        # TODO: Create canvas for x and y axis also
+        xray_image = get_image_array(item, material, axis=2)
+        image_height, image_width = xray_image.shape[:2]
+        canvases[0][x:x + image_height, y:y + image_width] = canvases[0][x:x + image_height,
+                                                             y:y + image_width] * xray_image
 
-        else:
-            break
+        counter += 1
 
+    print(f"Packed {counter} objects in the box.")
     fig, ax = plt.subplots(2, 2, figsize=(20, 15))
     ax[0, 0].imshow(elevation)
     ax[0, 0].set_title("Elevation")

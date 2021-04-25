@@ -11,18 +11,14 @@ import numpy as np
 from skimage.transform import rotate
 from tqdm import tqdm
 
-from .config import decay_constant, material_constant
+from .config import decay_constant, Material
 from .poisson_disc import poissonDisc
 from .util import dir_path, read_stl, get_voxels, get_material, crop_model
 
 
 def get_image_array(voxels, material, axis=2):
-    assert material is not None
-    if material not in material_constant.keys() or not material_constant[material]:
-        raise NotImplementedError(f"Available objects are {list(material_constant.keys())}")
-    mat_const = -np.log(np.array(material_constant[material]))
-    mat_const = (mat_const / np.sqrt(np.sum(mat_const ** 2)))
-    depth = np.expand_dims(voxels.sum(axis=axis) / 255, axis=2) * mat_const
+    mat = Material()
+    depth = np.expand_dims(voxels.sum(axis=axis) / 255, axis=2) * mat.get_const(material)
     img = np.exp(-decay_constant * depth)
     return img
 
