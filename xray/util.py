@@ -55,3 +55,16 @@ def get_voxels(triangles, resolution):
 
     vol, bounding_box = pad_voxel_array(vol)
     return vol, bounding_box
+
+
+def crop_model(voxels):
+    s = np.sum(voxels, axis=(1, 2))
+    has_voxels = np.where(s > 0)[0]
+    voxels = voxels[has_voxels[0]:has_voxels[-1] + 1]
+    s = np.sum(voxels, axis=(0, 2))
+    has_voxels = np.where(s > 0)[0]
+    voxels = voxels[:, has_voxels[0]:has_voxels[-1] + 1]
+    s = np.sum(voxels, axis=(0, 1))
+    has_voxels = np.where(s > 0)[0]
+    voxels = voxels[:, :, has_voxels[0]:has_voxels[-1] + 1]
+    return voxels

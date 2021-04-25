@@ -3,20 +3,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-
-
-def crop_model(voxels):
-    s = np.sum(voxels, axis=(1, 2))
-    has_voxels = np.where(s > 0)[0]
-    voxels = voxels[has_voxels[0]:has_voxels[-1] + 1]
-    s = np.sum(voxels, axis=(0, 2))
-    has_voxels = np.where(s > 0)[0]
-    voxels = voxels[:, has_voxels[0]:has_voxels[-1] + 1]
-    s = np.sum(voxels, axis=(0, 1))
-    has_voxels = np.where(s > 0)[0]
-    voxels = voxels[:, :, has_voxels[0]:has_voxels[-1] + 1]
-    return voxels
-
+from xray.util import crop_model
 
 if __name__ == '__main__':
     voxel_files = glob("../temp/*True.npy")
