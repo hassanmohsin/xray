@@ -1,3 +1,3 @@
-from .generate import argument_parser
+from .play import main
 
-argument_parser()
+main()
