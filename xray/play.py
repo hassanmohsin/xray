@@ -6,7 +6,6 @@ from tqdm import tqdm
 
 from .config import Material
 from .generate import get_image_array
-from .util import crop_model
 
 
 def get_material(s):
@@ -35,8 +34,7 @@ def main():
 
     # *True.npy files are rotated and vice versa
     voxel_files = glob("./voxels_cropped/*True.npy")
-    # TODO: unequal sides of the box causes numpy shape mismatch error
-    box_x, box_y, box_z = 1000, 1000, 1000
+    box_x, box_y, box_z = 1000, 1000, 2000
     box = np.zeros((box_x, box_y, box_z), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
     canvases = [np.ones((box_y, box_z, 3)),
@@ -53,7 +51,7 @@ def main():
         # Get the material type
         material = get_material(voxel_file)
         # Load the model
-        item = crop_model(np.load(voxel_file))
+        item = np.load(voxel_file)
         offsets = []
 
         # Find the heights of the top and bottom surface for each pixel
@@ -94,12 +92,12 @@ def main():
         box[x:x + item.shape[0], y:y + item.shape[1], height + offset:height + offset + item.shape[2]] = item
         elevation[x:x + item.shape[0], y:y + item.shape[1]] = height + offset + item.shape[2]
         # Draw the object image on the canvas
-        # TODO: Create canvas for x and y axis also
+        # Along z-axis
         xray_image = get_image_array(item, material, axis=2)
         image_height, image_width = xray_image.shape[:2]
-        canvases[0][x:x + image_height, y:y + image_width] = canvases[0][x:x + image_height,
+        canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                              y:y + image_width] * xray_image
-
+        # TODO: Projection along x and y axis
         counter += 1
 
     print(f"Packed {counter} objects in the box.")
@@ -119,7 +117,7 @@ def main():
     #     ax[i].imshow(canvases[i])
     # plt.show()
 
-    plt.imshow(canvases[0])
+    plt.imshow(canvases[2])  # Z-axis
     plt.show()
 
 
