@@ -1,42 +1,82 @@
+from glob import glob
+
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.ndimage import zoom
+from tqdm import tqdm
 
-from packing.split_box_3D import split_box
-from xray.generate import get_image_array
-from xray.util import read_stl, get_voxels
+
+def crop_model(voxels):
+    s = np.sum(voxels, axis=(1, 2))
+    has_voxels = np.where(s > 0)[0]
+    voxels = voxels[has_voxels[0]:has_voxels[-1] + 1]
+    s = np.sum(voxels, axis=(0, 2))
+    has_voxels = np.where(s > 0)[0]
+    voxels = voxels[:, has_voxels[0]:has_voxels[-1] + 1]
+    s = np.sum(voxels, axis=(0, 1))
+    has_voxels = np.where(s > 0)[0]
+    voxels = voxels[:, :, has_voxels[0]:has_voxels[-1] + 1]
+    return voxels
+
 
 if __name__ == '__main__':
-    # Get the box and split
-    x, y, z, dx, dy, dz = 0, 0, 0, 100, 100, 100  # Initial box location and size, box = [x,y,z,dx,dy,dz]
-    sphere_size = 100
-    box = np.array([x, y, z, dx, dy, dz], dtype=np.float32)
-    # TODO: set a minimum threshold in split_box so that there is no size one box
-    mini_boxes = np.ceil(split_box(3, box, random_turn=False)).astype('int')
-    box = np.zeros((dx, dy, dz))
+    voxel_files = glob("../temp/*True.npy")
+    box_x, box_y, box_z = 2000, 2000, 2000
+    box = np.zeros((box_x, box_y, box_z), dtype=np.bool)
 
-    # Get the sphere
-    sphere = read_stl("packing/sphere-50mm.stl")
-    sph_voxels, _ = get_voxels(sphere, resolution=sphere_size)
-    del sphere
+    ground = np.zeros(box[..., 0].shape)
+    elevation = np.zeros(box[..., 0].shape, dtype=np.int32)
+    gap = 20  # Minimum gap between object at (x, y) plane. (!)Lower gap increases runtime significantly.
+    positions = []
 
-    # Get the sizes of each mini_boxes
-    sizes = mini_boxes[:, 3:]
-    shortest_size = np.argmin(sizes, axis=1)
-    for i, sh_size in enumerate(shortest_size):
-        # get the zoom factor
-        factor = (sizes[i][sh_size] - 1) / sph_voxels.shape[sh_size]  # subtract 1 to get rid of off-by-one error
-        # zoom in/out
-        mini_sphere = zoom(sph_voxels, (factor, factor, factor))
-        p, q, r = mini_boxes[i][:3]
-        s, t, u = mini_boxes[i][:3] + mini_sphere.shape
-        box[p:s, q:t, r:u] = mini_sphere
+    print(f"Packing objects into the box of size {box.shape}...")
+    for voxel_file in tqdm(voxel_files):
+        # Load the model
+        item = crop_model(np.load(voxel_file))
+        offsets = []
 
-    plt.figure()
-    plt.imshow(get_image_array(box.sum(axis=0), material='plastic'))
-    plt.show()
+        # Find the heights of the top and bottom surface for each pixel
+        bottom_surface = np.zeros(item.shape[:2])  # height of the bottom surface
+        ceiling = np.zeros_like(bottom_surface).astype(np.bool)
+        top_surface = bottom_surface.copy()  # height of the bottom surface
+        floor = ceiling.copy()
 
-    # 3D plot (very slow, reduce sphere_size for faster execution
-    ax = plt.figure(figsize=(20, 20)).add_subplot(projection='3d')
-    ax.voxels(box, edgecolor='k')
+        # TODO: Merge the loops below (Track the height)
+        for h in range(item.shape[-1]):
+            ceiling = ceiling | item[..., h]
+            bottom_surface[~item[..., h] & ~ceiling] += 1
+        bottom_surface[~ceiling] = 0
+
+        for h in range(item.shape[-1] - 1, -1, -1):
+            floor = floor | item[..., h]
+            top_surface[~item[..., h] & ~floor] += 1
+        top_surface[~floor] = 0
+
+        # Find the minimum height at each possible position on the ground
+        for i in range(0, box.shape[0] - item.shape[0] + 1, gap):
+            for j in range(0, box.shape[1] - item.shape[1] + 1, gap):
+                d = bottom_surface - ground[i:i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
+                offsets.append([i, j, np.min(d)])  # append indices and the offset
+
+        assert len(offsets) > 0
+        a = max(offsets, key=lambda x: x[2])
+        # Subtract offset from the top surface
+        ground[a[0]:a[0] + item.shape[0], a[1]:a[1] + item.shape[1]] = top_surface - a[2]
+        if np.max(ground) <= box.shape[2]:
+            x, y = a[:2]
+            offset = int(a[2])
+            height = np.max(elevation[x:x + item.shape[0], y:y + item.shape[1]])
+            box[x:x + item.shape[0], y:y + item.shape[1], height + offset:height + offset + item.shape[2]] = item
+            elevation[x:x + item.shape[0], y:y + item.shape[1]] = height + offset + item.shape[2]
+        else:
+            break
+
+    fig, ax = plt.subplots(2, 2, figsize=(20, 15))
+    ax[0, 0].imshow(elevation)
+    ax[0, 0].set_title("Elevation")
+    ax[0, 1].imshow(box.sum(axis=0))
+    ax[0, 1].set_title("Box (axis 0)")
+    ax[1, 0].imshow(box.sum(axis=1))
+    ax[1, 0].set_title("Box (axis 1)")
+    ax[1, 1].imshow(box.sum(axis=2))
+    ax[1, 1].set_title("Box (axis 2)")
     plt.show()
