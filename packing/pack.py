@@ -23,11 +23,12 @@ if __name__ == '__main__':
     box_x, box_y, box_z = 2000, 2000, 2000
     box = np.zeros((box_x, box_y, box_z), dtype=np.bool)
 
-    ground = np.zeros(box[..., 0].shape)  # Ground height
-    gap = 20  # pixel
+    ground = np.zeros(box[..., 0].shape)
+    elevation = np.zeros(box[..., 0].shape, dtype=np.int32)
+    gap = 20  # Minimum gap between object at (x, y) plane. (!)Lower gap increases runtime significantly.
     positions = []
 
-    print("Finding places for objects...")
+    print(f"Packing objects into the box of size {box.shape}...")
     for voxel_file in tqdm(voxel_files):
         # Load the model
         item = crop_model(np.load(voxel_file))
@@ -39,6 +40,7 @@ if __name__ == '__main__':
         top_surface = bottom_surface.copy()  # height of the bottom surface
         floor = ceiling.copy()
 
+        # TODO: Merge the loops below (Track the height)
         for h in range(item.shape[-1]):
             ceiling = ceiling | item[..., h]
             bottom_surface[~item[..., h] & ~ceiling] += 1
@@ -60,21 +62,13 @@ if __name__ == '__main__':
         # Subtract offset from the top surface
         ground[a[0]:a[0] + item.shape[0], a[1]:a[1] + item.shape[1]] = top_surface - a[2]
         if np.max(ground) <= box.shape[2]:
-            positions.append([a[:2], a[2]])
+            x, y = a[:2]
+            offset = int(a[2])
+            height = np.max(elevation[x:x + item.shape[0], y:y + item.shape[1]])
+            box[x:x + item.shape[0], y:y + item.shape[1], height + offset:height + offset + item.shape[2]] = item
+            elevation[x:x + item.shape[0], y:y + item.shape[1]] = height + offset + item.shape[2]
         else:
             break
-
-    # Pack the box with objects
-    print(f"Found place for {len(positions)} objects, packing into the box of size {box.shape}...")
-    elevation = np.zeros(box[..., 0].shape, dtype=np.int32)
-    for voxel_file, position in zip(voxel_files, positions):
-        # TODO: Remove multiple loading of the same array
-        voxels = crop_model(np.load(voxel_file))
-        x, y = position[0]
-        offset = int(position[1])
-        height = np.max(elevation[x:x + voxels.shape[0], y:y + voxels.shape[1]])
-        box[x:x + voxels.shape[0], y:y + voxels.shape[1], height + offset:height + offset + voxels.shape[2]] = voxels
-        elevation[x:x + voxels.shape[0], y:y + voxels.shape[1]] = height + offset + voxels.shape[2]
 
     fig, ax = plt.subplots(2, 2, figsize=(20, 15))
     ax[0, 0].imshow(elevation)
