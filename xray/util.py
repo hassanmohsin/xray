@@ -1,10 +1,11 @@
+import math
 import os
 
 import numpy as np
 from stl import Mesh
 
 from .perimeter import lines_to_voxels
-from .slice import to_intersecting_lines, calculate_scale_shift
+from .slice import to_intersecting_lines
 
 
 def dir_path(string):
@@ -34,15 +35,25 @@ def read_stl(input_file):
     return Mesh.from_file(input_file)
 
 
-def get_voxels(triangles, resolution):
+def get_voxels(triangles, xy_scale=2.0):
     """
     Converts an .stl file into voxels
+    :param xy_scale: Scale the object in xy-plane
     :param triangles: Mesh of the object
-    :param resolution: Resolution of the voxel cube
-    :return: scale, shift, volume and bounding box of the voxel cube
+    :return: volume and bounding box of the voxel cube
     """
     mesh = triangles.data['vectors'].astype(np.float32)
-    (scale, shift, bounding_box) = calculate_scale_shift(mesh, resolution)
+    # (scale, shift, bounding_box) = calculate_scale_shift(mesh, resolution)
+    all_points = mesh.reshape(-1, 3)
+    mins = all_points.min(axis=0)
+    maxs = all_points.max(axis=0)
+    del all_points
+    shift = -1 * mins
+    xresolution = 1 + xy_scale * (maxs[0] - mins[0])
+    yresolution = 1 + xy_scale * (maxs[1] - mins[1])
+    scale = [xy_scale, xy_scale, xy_scale]
+    bounding_box = [int(xresolution), int(yresolution), math.ceil((maxs[2] - mins[2]) * xy_scale)]
+
     new_points = (mesh.reshape(-1, 3) + shift) * scale
     new_points = new_points.reshape(-1, 9)
     # TODO: Remove duplicate triangles from new_points

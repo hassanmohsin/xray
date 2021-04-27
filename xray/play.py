@@ -33,7 +33,7 @@ def main():
     #     vox_objects.append(voxels)
 
     # *True.npy files are rotated and vice versa
-    voxel_files = glob("./voxels_cropped/*True.npy")
+    voxel_files = glob("./voxels_scaled/*true.npy")
     box_x, box_y, box_z = 1000, 1000, 2000
     box = np.zeros((box_x, box_y, box_z), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
@@ -47,7 +47,7 @@ def main():
     counter = 0
 
     print(f"Packing objects into the box of size {box.shape}...")
-    for voxel_file in tqdm(voxel_files[:30]):
+    for voxel_file in tqdm(voxel_files):
         # Get the material type
         material = get_material(voxel_file)
         # Load the model
@@ -100,7 +100,7 @@ def main():
         # TODO: Projection along x and y axis
         counter += 1
 
-    print(f"Packed {counter} objects in the box.")
+    print(f"Packed {counter} objects in the box. Now generating images")
     fig, ax = plt.subplots(2, 2, figsize=(20, 15))
     ax[0, 0].imshow(elevation)
     ax[0, 0].set_title("Elevation")
@@ -118,6 +118,7 @@ def main():
     # plt.show()
 
     plt.imshow(canvases[2])  # Z-axis
+    plt.savefig("packed2.png", dpi=300)
     plt.show()
 
 

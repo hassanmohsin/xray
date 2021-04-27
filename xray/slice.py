@@ -90,6 +90,7 @@ def where_line_crosses_z(p1, p2, z):
     return linear_interpolation(p1, p2, distance)
 
 
+# Depricated
 def calculate_scale_shift(mesh, resolution):
     all_points = mesh.reshape(-1, 3)
     mins = all_points.min(axis=0)
