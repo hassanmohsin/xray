@@ -3,7 +3,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-
+import random
 from .config import Material
 from .generate import get_image_array
 
@@ -34,7 +34,9 @@ def main():
 
     # *True.npy files are rotated and vice versa
     voxel_files = glob("./voxels_scaled/*true.npy")
-    box_x, box_y, box_z = 1000, 1000, 2000
+    # Shuffle the files (object) to change the order they are put in the box
+    random.shuffle(voxel_files)
+    box_x, box_y, box_z = 1500, 1500, 1000
     box = np.zeros((box_x, box_y, box_z), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
     canvases = [np.ones((box_y, box_z, 3)),
@@ -110,6 +112,7 @@ def main():
     ax[1, 0].set_title("Box (axis 1)")
     ax[1, 1].imshow(box.sum(axis=2))
     ax[1, 1].set_title("Box (axis 2)")
+    plt.savefig("blueprint.png", dpi=300)
     plt.show()
 
     # fix, ax = plt.subplots(3, figsize=(20, 15))
