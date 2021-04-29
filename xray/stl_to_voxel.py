@@ -21,9 +21,10 @@ def stl_to_voxel(stl_file, args):
     mesh = read_stl(stl_file)
     # Random rotation over x and y axis (rotation over z axis is done at image level)
     if args.rotate_mesh:
-        xrot = np.random.choice(range(10))
-        yrot = np.random.choice(range(10))
-        zrot = np.random.choice(range(0, 361, 90)) + np.random.choice(range(10))
+        max_deviation = 20
+        xrot = np.random.choice(range(-max_deviation, max_deviation, 1))
+        yrot = np.random.choice(range(-max_deviation, max_deviation, 1))
+        zrot = np.random.choice(range(0, 361, 90)) + np.random.choice(range(-max_deviation, max_deviation, 1))
         print(f"{stl_file} is rotated by ({xrot}, {yrot}, {zrot})")
         mesh.rotate([0.5, 0., 0.], math.radians(xrot))
         mesh.rotate([0., 0.5, 0.], math.radians(yrot))
