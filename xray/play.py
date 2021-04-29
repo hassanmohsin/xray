@@ -96,24 +96,24 @@ def main():
         elevation[x:x + item.shape[1], y:y + item.shape[2]] = height + offset + item.shape[0]
         # Draw the object image on the canvas
         # View from longer side
-        # xray_image = get_image_array(item, material, axis=2)
-        # image_height, image_width = xray_image.shape[:2]
-        # t = (x + image_height, y + image_width)
-        # canvases[0][x:x + image_height, y:y + image_width] = canvases[0][x:x + image_height,
-        #                                                      y:y + image_width] * xray_image
-        #
-        # # View from wider side
-        # xray_image = get_image_array(item, material, axis=1)
-        # image_height, image_width = xray_image.shape[:2]
-        # canvases[1][x:x + image_height, y:y + image_width] = canvases[1][x:x + image_height,
-        #                                                      y:y + image_width] * xray_image
+        xray_image = get_image_array(item, material, axis=2)
+        image_height, image_width = xray_image.shape[:2]
+        canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
+                                                                                          height + offset: height + offset + image_height,
+                                                                                          x:x + image_width] * xray_image
+
+        # View from wider side
+        xray_image = get_image_array(item, material, axis=1)
+        image_height, image_width = xray_image.shape[:2]
+        canvases[1][height + offset: height + offset + image_height, y:y + image_width] = canvases[1][
+                                                                                          height + offset: height + offset + image_height,
+                                                                                          y:y + image_width] * xray_image
 
         # View from top
         xray_image = get_image_array(item, material, axis=0)
         image_height, image_width = xray_image.shape[:2]
         canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                              y:y + image_width] * xray_image
-        # TODO: Projection along x and y axis
         counter += 1
 
     print(f"Packed {counter} objects in the box. Now generating images")
@@ -126,22 +126,18 @@ def main():
     ax[1, 0].set_title("Box (axis 1)")
     ax[1, 1].imshow(box.sum(axis=0), origin='lower')
     ax[1, 1].set_title("Box (axis 0)")
-    plt.savefig("blueprint.png", dpi=300)
+    plt.savefig("depth_view.png", dpi=300)
     plt.show()
 
-    fig, ax = plt.subplots(3, figsize=(20, 15))
+    fig, ax = plt.subplots(1, 3, figsize=(20, 15))
     ax[0].imshow(canvases[2], origin='lower')
     ax[0].set_title("Box (axis 2)")
     ax[1].imshow(canvases[1], origin='lower')
     ax[1].set_title("Box (axis 1)")
     ax[2].imshow(canvases[0], origin='lower')
     ax[2].set_title("Box (axis 0)")
-    plt.savefig("canvases.png", dpi=300)
+    plt.savefig("xray.png", dpi=300)
     plt.show()
-
-    # plt.imshow(canvases[2], origin='lower')  # Z-axis
-    # plt.savefig("packed2.png", dpi=300)
-    # plt.show()
 
 
 if __name__ == '__main__':
