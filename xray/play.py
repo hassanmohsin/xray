@@ -34,10 +34,10 @@ def main():
     #     vox_objects.append(voxels)
 
     # *True.npy files are rotated and vice versa
-    voxel_files = glob("./voxels_scaled/*1.0_false.npy")
+    voxel_files = glob("./voxels_scaled/*1.0_true.npy")
     # Shuffle the files (object) to change the order they are put in the box
     random.shuffle(voxel_files)
-    box_height, box_length, box_width = 1000, 500, 500
+    box_height, box_length, box_width = 300, 500, 500
     box = np.zeros((box_height, box_length, box_width), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
     canvases = [np.ones((box_height, box_length, 3)),  # From longer side
@@ -93,7 +93,7 @@ def main():
             # goes beyond the box if the object is placed, try the next one
             continue
         box[height + offset:height + offset + item.shape[0], x:x + item.shape[1], y:y + item.shape[2]] = item
-        elevation[x:x + item.shape[1], y:y + item.shape[2]] = height + offset + item.shape[0]
+        elevation[x:x + item.shape[1], y:y + item.shape[2]] = top_surface  # height + offset + item.shape[0]
         # Draw the object image on the canvas
         # View from longer side
         xray_image = get_image_array(item, material, axis=2)
