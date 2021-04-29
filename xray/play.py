@@ -1,9 +1,10 @@
+import random
 from glob import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-import random
+
 from .config import Material
 from .generate import get_image_array
 
@@ -33,18 +34,18 @@ def main():
     #     vox_objects.append(voxels)
 
     # *True.npy files are rotated and vice versa
-    voxel_files = glob("./voxels_scaled/*true.npy")
+    voxel_files = glob("./voxels_scaled/*1.0_false.npy")
     # Shuffle the files (object) to change the order they are put in the box
     random.shuffle(voxel_files)
-    box_x, box_y, box_z = 1500, 1500, 1000
-    box = np.zeros((box_x, box_y, box_z), dtype=np.bool)  # Box to put the objects in
+    box_height, box_length, box_width = 1000, 500, 500
+    box = np.zeros((box_height, box_length, box_width), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
-    canvases = [np.ones((box_y, box_z, 3)),
-                np.ones((box_x, box_z, 3)),
-                np.ones((box_x, box_y, 3))]
+    canvases = [np.ones((box_height, box_length, 3)),  # From longer side
+                np.ones((box_height, box_width, 3)),  # From wider side
+                np.ones((box_length, box_width, 3))]  # From top
 
-    ground = np.zeros(box[..., 0].shape)
-    elevation = np.zeros(box[..., 0].shape, dtype=np.int32)
+    ground = np.zeros((box_length, box_width))
+    elevation = np.zeros(ground.shape, dtype=np.int32)
     gap = 20  # Minimum gap between object at (x, y) plane. (!)Lower gap increases runtime significantly.
     counter = 0
 
@@ -57,45 +58,58 @@ def main():
         offsets = []
 
         # Find the heights of the top and bottom surface for each pixel
-        bottom_surface = np.zeros(item.shape[:2])  # height of the bottom surface
+        bottom_surface = np.zeros(item.shape[1:], dtype=np.int32)  # height of the bottom surface
         ceiling = np.zeros_like(bottom_surface).astype(np.bool)
         top_surface = bottom_surface.copy()  # height of the bottom surface
         floor = ceiling.copy()
 
         # TODO: Merge the loops below (Track the height)
-        for h in range(item.shape[-1]):
-            ceiling = ceiling | item[..., h]
-            bottom_surface[~item[..., h] & ~ceiling] += 1
+        for h in range(item.shape[0]):
+            ceiling = ceiling | item[h]
+            bottom_surface[~item[h] & ~ceiling] += 1
         bottom_surface[~ceiling] = 0
 
-        for h in range(item.shape[-1] - 1, -1, -1):
-            floor = floor | item[..., h]
-            top_surface[~item[..., h] & ~floor] += 1
+        for h in range(item.shape[0] - 1, -1, -1):
+            floor = floor | item[h]
+            top_surface[~item[h] & ~floor] += 1
         top_surface[~floor] = 0
 
         # Find the minimum height at each possible position on the ground
-        for i in range(0, box.shape[0] - item.shape[0] + 1, gap):
-            for j in range(0, box.shape[1] - item.shape[1] + 1, gap):
+        for i in range(0, box.shape[1] - item.shape[1], gap):
+            for j in range(0, box.shape[2] - item.shape[2], gap):
                 d = bottom_surface - ground[i:i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
                 offsets.append([i, j, np.min(d)])  # append indices and the offset
 
         assert len(offsets) > 0
         a = max(offsets, key=lambda x: x[2])
         # Subtract offset from the top surface
-        ground[a[0]:a[0] + item.shape[0], a[1]:a[1] + item.shape[1]] = top_surface - a[2]
+        ground[a[0]:a[0] + item.shape[1], a[1]:a[1] + item.shape[2]] = top_surface - a[2]
         # add the objects into the box
-        x, y = a[:2]
+        x, y = a[:2]  # Coords at h plane where the offset was lowest
         offset = int(a[2])
-        height = np.max(elevation[x:x + item.shape[0], y:y + item.shape[1]])
+        height = np.max(elevation[x:x + item.shape[1], y:y + item.shape[2]])
         offset = offset if offset >= 0 else 0
-        if height + offset + item.shape[2] > box.shape[2]:
+        if height + offset + item.shape[0] > box.shape[0]:
             # goes beyond the box if the object is placed, try the next one
             continue
-        box[x:x + item.shape[0], y:y + item.shape[1], height + offset:height + offset + item.shape[2]] = item
-        elevation[x:x + item.shape[0], y:y + item.shape[1]] = height + offset + item.shape[2]
+        box[height + offset:height + offset + item.shape[0], x:x + item.shape[1], y:y + item.shape[2]] = item
+        elevation[x:x + item.shape[1], y:y + item.shape[2]] = height + offset + item.shape[0]
         # Draw the object image on the canvas
-        # Along z-axis
-        xray_image = get_image_array(item, material, axis=2)
+        # View from longer side
+        # xray_image = get_image_array(item, material, axis=2)
+        # image_height, image_width = xray_image.shape[:2]
+        # t = (x + image_height, y + image_width)
+        # canvases[0][x:x + image_height, y:y + image_width] = canvases[0][x:x + image_height,
+        #                                                      y:y + image_width] * xray_image
+        #
+        # # View from wider side
+        # xray_image = get_image_array(item, material, axis=1)
+        # image_height, image_width = xray_image.shape[:2]
+        # canvases[1][x:x + image_height, y:y + image_width] = canvases[1][x:x + image_height,
+        #                                                      y:y + image_width] * xray_image
+
+        # View from top
+        xray_image = get_image_array(item, material, axis=0)
         image_height, image_width = xray_image.shape[:2]
         canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                              y:y + image_width] * xray_image
@@ -106,23 +120,28 @@ def main():
     fig, ax = plt.subplots(2, 2, figsize=(20, 15))
     ax[0, 0].imshow(elevation)
     ax[0, 0].set_title("Elevation")
-    ax[0, 1].imshow(box.sum(axis=0))
-    ax[0, 1].set_title("Box (axis 0)")
-    ax[1, 0].imshow(box.sum(axis=1))
+    ax[0, 1].imshow(box.sum(axis=2), origin='lower')
+    ax[0, 1].set_title("Box (axis 2)")
+    ax[1, 0].imshow(box.sum(axis=1), origin='lower')
     ax[1, 0].set_title("Box (axis 1)")
-    ax[1, 1].imshow(box.sum(axis=2))
-    ax[1, 1].set_title("Box (axis 2)")
+    ax[1, 1].imshow(box.sum(axis=0), origin='lower')
+    ax[1, 1].set_title("Box (axis 0)")
     plt.savefig("blueprint.png", dpi=300)
     plt.show()
 
-    # fix, ax = plt.subplots(3, figsize=(20, 15))
-    # for i in range(3):
-    #     ax[i].imshow(canvases[i])
-    # plt.show()
-
-    plt.imshow(canvases[2])  # Z-axis
-    plt.savefig("packed2.png", dpi=300)
+    fig, ax = plt.subplots(3, figsize=(20, 15))
+    ax[0].imshow(canvases[2], origin='lower')
+    ax[0].set_title("Box (axis 2)")
+    ax[1].imshow(canvases[1], origin='lower')
+    ax[1].set_title("Box (axis 1)")
+    ax[2].imshow(canvases[0], origin='lower')
+    ax[2].set_title("Box (axis 0)")
+    plt.savefig("canvases.png", dpi=300)
     plt.show()
+
+    # plt.imshow(canvases[2], origin='lower')  # Z-axis
+    # plt.savefig("packed2.png", dpi=300)
+    # plt.show()
 
 
 if __name__ == '__main__':

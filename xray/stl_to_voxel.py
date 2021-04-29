@@ -14,15 +14,22 @@ from xray.util import dir_path, read_stl, get_voxels, crop_model
 
 def stl_to_voxel(stl_file, args):
     voxel_file = os.path.join(
-        os.path.join(args.output, f"{os.path.split(stl_file)[1][:-4]}_{args.vres}_{str(args.rotate_mesh).lower()}"))
+        os.path.join(args.output, f"{os.path.split(stl_file)[1][:-4]}_{args.scale}_{str(args.rotate_mesh).lower()}"))
 
-    if os.path.isfile(voxel_file + ".npy"):
-        return
+    # if os.path.isfile(voxel_file + ".npy"):
+    #     return
     mesh = read_stl(stl_file)
     # Random rotation over x and y axis (rotation over z axis is done at image level)
     if args.rotate_mesh:
-        mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
-        mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
+        xrot = np.random.choice(range(10))
+        yrot = np.random.choice(range(10))
+        zrot = np.random.choice(range(0, 361, 90)) + np.random.choice(range(10))
+        print(f"{stl_file} is rotated by ({xrot}, {yrot}, {zrot})")
+        mesh.rotate([0.5, 0., 0.], math.radians(xrot))
+        mesh.rotate([0., 0.5, 0.], math.radians(yrot))
+        mesh.rotate([0., 0., 0.5], math.radians(zrot))
+        # mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
+        # mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
     voxels, _ = get_voxels(mesh, args.scale)
     voxels = crop_model(voxels)
     np.save(voxel_file, voxels)
