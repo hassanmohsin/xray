@@ -1,3 +1,3 @@
-from .play import main
+from .play import argument_parser
 
-main()
+argument_parser()

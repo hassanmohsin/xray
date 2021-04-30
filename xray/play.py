@@ -1,9 +1,13 @@
+import json
+import multiprocessing as mp
+import os
 import random
+from argparse import ArgumentParser
 from glob import glob
+from itertools import repeat
 
 import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
 
 from .config import Material
 from .generate import get_image_array
@@ -18,26 +22,10 @@ def get_material(s):
     return ''
 
 
-def main():
-    # print("Reading stl files and converting into voxels...")
-    # stl_files = glob("./stl_files/*stl")
-    # # Convert into voxels
-    # vox_objects = []
-    # # TODO: remove limited stl file loading
-    # for stl in tqdm(stl_files[:10]):
-    #     mesh = read_stl(stl)
-    #     # TODO: Add rotation of mesh objects using arguments
-    #     mesh.rotate([0.5, 0., 0.0], math.radians(np.random.randint(30, 210)))
-    #     mesh.rotate([0., 0.5, 0.0], math.radians(np.random.randint(30, 210)))
-    #     # TODO: Remove hardcoded resolution
-    #     voxels, _ = get_voxels(mesh, resolution=300)
-    #     vox_objects.append(voxels)
-
-    # *True.npy files are rotated and vice versa
-    voxel_files = glob("./voxels_scaled/*1.0_true.npy")
+def generate(args, id):
     # Shuffle the files (object) to change the order they are put in the box
-    random.shuffle(voxel_files)
-    box_height, box_length, box_width = 300, 500, 500
+    random.shuffle(args['voxels'])
+    box_height, box_length, box_width = args['height'], args['length'], args['width']
     box = np.zeros((box_height, box_length, box_width), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
     canvases = [np.ones((box_height, box_length, 3)),  # From longer side
@@ -50,11 +38,7 @@ def main():
     counter = 0
 
     print(f"Packing objects into the box of size {box.shape}...")
-    for voxel_file in tqdm(voxel_files):
-        # Get the material type
-        material = get_material(voxel_file)
-        # Load the model
-        item = np.load(voxel_file)
+    for item, material in zip(args['voxels'], args['materials']):
         offsets = []
 
         # Find the heights of the top and bottom surface for each pixel
@@ -117,29 +101,52 @@ def main():
         counter += 1
 
     print(f"Packed {counter} objects in the box. Now generating images")
-    fig, ax = plt.subplots(2, 2, figsize=(20, 15))
-    ax[0, 0].imshow(elevation)
-    ax[0, 0].set_title("Elevation")
-    ax[0, 1].imshow(box.sum(axis=2), origin='lower')
-    ax[0, 1].set_title("Box (axis 2)")
-    ax[1, 0].imshow(box.sum(axis=1), origin='lower')
-    ax[1, 0].set_title("Box (axis 1)")
-    ax[1, 1].imshow(box.sum(axis=0), origin='lower')
-    ax[1, 1].set_title("Box (axis 0)")
-    plt.savefig("depth_view.png", dpi=300)
-    plt.show()
 
-    fig, ax = plt.subplots(1, 3, figsize=(20, 15))
-    ax[0].imshow(canvases[2], origin='lower')
-    ax[0].set_title("Box (axis 2)")
-    ax[1].imshow(canvases[1], origin='lower')
-    ax[1].set_title("Box (axis 1)")
-    ax[2].imshow(canvases[0], origin='lower')
-    ax[2].set_title("Box (axis 0)")
-    plt.tight_layout()
-    plt.savefig("xray.png", dpi=300)
-    plt.show()
+    # Saving the images
+    plt.axis('off')
+    plt.imshow(canvases[0], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_x.png"), dpi=300)
+    plt.imshow(canvases[1], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_y.png"), dpi=300)
+    plt.imshow(canvases[2], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_z.png"), dpi=300)
+
+
+def main(args):
+    # Load the voxels
+    files = glob(
+        os.path.join(args['input_dir'], '*' + str(args['scale']) + '_' + str(args['rotated']).lower() + ".npy"))
+    files = [f for f in files if os.path.isfile(f)]
+    if len(files) == 0:
+        raise FileNotFoundError('No numpy (.npy) file found.')
+
+    voxels = [np.load(f) for f in files]
+    materials = [get_material(f) for f in files]
+
+    args['voxels'] = voxels
+    args['materials'] = materials
+
+    if args['parallel']:
+        pool = mp.Pool(min(args['count'], mp.cpu_count()))
+        pool.starmap(generate, zip(repeat(args), range(args['count'])))
+    else:
+        for i in range(args['count']):
+            generate(args, i)
+
+
+def argument_parser():
+    parser = ArgumentParser(description='Convert 3D models to false-color xray images')
+    parser.add_argument('--input', type=str, required=True, action='store',
+                        help="JSON input")
+    args = parser.parse_args()
+    if not os.path.isfile(args.input):
+        raise FileNotFoundError("Input {args.input} not found.")
+
+    with open(args.input) as f:
+        args = json.load(f)
+
+    main(args)
 
 
 if __name__ == '__main__':
-    main()
+    argument_parser()

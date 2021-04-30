@@ -1,0 +1,11 @@
+{
+  "input_dir": "./voxels_scaled",
+  "scale": 2.0,
+  "rotated": true,
+  "length": 1000,
+  "width": 1000,
+  "height": 500,
+  "count": 20,
+  "output": "./output",
+  "parallel": false
+}
