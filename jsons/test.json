@@ -7,5 +7,5 @@
   "height": 500,
   "count": 20,
   "output": "./output",
-  "parallel": false
+  "parallel": true
 }
