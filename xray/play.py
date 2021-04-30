@@ -25,7 +25,8 @@ def get_material(s):
 
 def generate(args, id):
     # Shuffle the files (object) to change the order they are put in the box
-    random.shuffle(args['voxels'])
+    indx = list(range(len(args['voxels'])))
+    random.shuffle(indx)
     box_height, box_length, box_width = args['height'], args['length'], args['width']
     box = np.zeros((box_height, box_length, box_width), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
@@ -39,7 +40,8 @@ def generate(args, id):
     counter = 0
 
     print(f"BOX {id + 1}: Packing objects...")
-    for item, material in zip(args['voxels'], args['materials']):
+    for ind in indx:
+        item, material = args['voxels'][ind], args['materials'][ind]
         offsets = []
 
         # Find the heights of the top and bottom surface for each pixel
