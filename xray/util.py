@@ -2,6 +2,7 @@ import math
 import os
 
 import numpy as np
+from PIL import ImageFilter, Image as Im
 from stl import Mesh
 
 from .perimeter import lines_to_voxels
@@ -79,3 +80,27 @@ def crop_model(voxels):
     has_voxels = np.where(s > 0)[0]
     voxels = voxels[:, :, has_voxels[0]:has_voxels[-1] + 1]
     return voxels
+
+
+# orange red	#FF4500	(255,69,0)
+# dark orange	#FF8C00	(255,140,0)
+# orange	#FFA500	(255,165,0)
+
+def get_background(img):
+    height, length = img.shape[:2]
+    dot_count = 30000
+    orange = [255., 165., 0.]
+    # orange = np.array([216, 156, 22]) # Sixray
+    bg = np.ones(img.shape) * 255.
+    xs, ys = np.random.choice(range(2, height - 2), dot_count), np.random.choice(range(2, length - 2), dot_count)
+
+    bg[xs, ys] = orange
+    bg[xs - 1, ys - 1] = orange
+    bg[xs + 1, ys + 1] = orange
+
+    bg = Im.fromarray(bg.astype(np.uint8))
+    bg = bg.filter(ImageFilter.GaussianBlur(radius=5))
+    bg = np.array(bg)
+    mask = img == (1., 1., 1.)
+    img[mask] = bg[mask]/255.
+    return img

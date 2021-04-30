@@ -11,6 +11,7 @@ import numpy as np
 
 from .config import Material
 from .generate import get_image_array
+from .util import get_background
 
 
 def get_material(s):
@@ -37,7 +38,7 @@ def generate(args, id):
     gap = 20  # Minimum gap between object at (x, y) plane. (!)Lower gap increases runtime significantly.
     counter = 0
 
-    print(f"Packing objects into the box of size {box.shape}...")
+    print(f"BOX {id + 1}: Packing objects...")
     for item, material in zip(args['voxels'], args['materials']):
         offsets = []
 
@@ -98,12 +99,18 @@ def generate(args, id):
         image_height, image_width = xray_image.shape[:2]
         canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                              y:y + image_width] * xray_image
+
+        # add background
+        canvases[0] = get_background(canvases[0])
+        canvases[1] = get_background(canvases[1])
+        canvases[2] = get_background(canvases[2])
         counter += 1
 
-    print(f"Packed {counter} objects in the box. Now generating images")
+    print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
 
     # Saving the images
     plt.axis('off')
+    plt.tight_layout()
     plt.imshow(canvases[0], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_x.png"), dpi=300)
     plt.imshow(canvases[1], origin='lower')
