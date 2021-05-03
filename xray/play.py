@@ -38,66 +38,68 @@ def generate(args, id):
     elevation = np.zeros(ground.shape, dtype=np.int32)
     gap = 20  # Minimum gap between object at (x, y) plane. (!)Lower gap increases runtime significantly.
     counter = 0
+    # TODO: Make sure the object of interest is in the packed box
+    ooi = []
 
     print(f"BOX {id + 1}: Packing objects...")
     for ind in indx:
-        item, material = args['voxels'][ind], args['materials'][ind]
+        voxels, material, item = args['voxels'][ind], args['materials'][ind], args['items'][ind]
         offsets = []
 
         # Find the heights of the top and bottom surface for each pixel
-        bottom_surface = np.zeros(item.shape[1:], dtype=np.int32)  # height of the bottom surface
+        bottom_surface = np.zeros(voxels.shape[1:], dtype=np.int32)  # height of the bottom surface
         ceiling = np.zeros_like(bottom_surface).astype(np.bool)
         top_surface = bottom_surface.copy()  # height of the bottom surface
         floor = ceiling.copy()
 
         # TODO: Merge the loops below (Track the height)
-        for h in range(item.shape[0]):
-            ceiling = ceiling | item[h]
-            bottom_surface[~item[h] & ~ceiling] += 1
+        for h in range(voxels.shape[0]):
+            ceiling = ceiling | voxels[h]
+            bottom_surface[~voxels[h] & ~ceiling] += 1
         bottom_surface[~ceiling] = 0
 
-        for h in range(item.shape[0] - 1, -1, -1):
-            floor = floor | item[h]
-            top_surface[~item[h] & ~floor] += 1
+        for h in range(voxels.shape[0] - 1, -1, -1):
+            floor = floor | voxels[h]
+            top_surface[~voxels[h] & ~floor] += 1
         top_surface[~floor] = 0
 
         # Find the minimum height at each possible position on the ground
-        for i in range(0, box.shape[1] - item.shape[1], gap):
-            for j in range(0, box.shape[2] - item.shape[2], gap):
+        for i in range(0, box.shape[1] - voxels.shape[1], gap):
+            for j in range(0, box.shape[2] - voxels.shape[2], gap):
                 d = bottom_surface - ground[i:i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
                 offsets.append([i, j, np.min(d)])  # append indices and the offset
 
         assert len(offsets) > 0
         a = max(offsets, key=lambda x: x[2])
         # Subtract offset from the top surface
-        ground[a[0]:a[0] + item.shape[1], a[1]:a[1] + item.shape[2]] = top_surface - a[2]
+        ground[a[0]:a[0] + voxels.shape[1], a[1]:a[1] + voxels.shape[2]] = top_surface - a[2]
         # add the objects into the box
         x, y = a[:2]  # Coords at h plane where the offset was lowest
         offset = int(a[2])
-        height = np.max(elevation[x:x + item.shape[1], y:y + item.shape[2]])
+        height = np.max(elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]])
         offset = offset if offset >= 0 else 0
-        if height + offset + item.shape[0] > box.shape[0]:
+        if height + offset + voxels.shape[0] > box.shape[0]:
             # goes beyond the box if the object is placed, try the next one
             continue
-        box[height + offset:height + offset + item.shape[0], x:x + item.shape[1], y:y + item.shape[2]] = item
-        elevation[x:x + item.shape[1], y:y + item.shape[2]] = top_surface  # height + offset + item.shape[0]
+        box[height + offset:height + offset + voxels.shape[0], x:x + voxels.shape[1], y:y + voxels.shape[2]] = voxels
+        elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface  # height + offset + item.shape[0]
         # Draw the object image on the canvas
         # View from longer side
-        xray_image = get_image_array(item, material, axis=2)
+        xray_image = get_image_array(voxels, material, axis=2)
         image_height, image_width = xray_image.shape[:2]
         canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
                                                                                           height + offset: height + offset + image_height,
                                                                                           x:x + image_width] * xray_image
 
         # View from wider side
-        xray_image = get_image_array(item, material, axis=1)
+        xray_image = get_image_array(voxels, material, axis=1)
         image_height, image_width = xray_image.shape[:2]
         canvases[1][height + offset: height + offset + image_height, y:y + image_width] = canvases[1][
                                                                                           height + offset: height + offset + image_height,
                                                                                           y:y + image_width] * xray_image
 
         # View from top
-        xray_image = get_image_array(item, material, axis=0)
+        xray_image = get_image_array(voxels, material, axis=0)
         image_height, image_width = xray_image.shape[:2]
         canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                              y:y + image_width] * xray_image
@@ -106,6 +108,8 @@ def generate(args, id):
         canvases[0] = get_background(canvases[0])
         canvases[1] = get_background(canvases[1])
         canvases[2] = get_background(canvases[2])
+        if item == args['ooi']:
+            ooi = [x, y, height, offset, voxels, material]
         counter += 1
 
     print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
@@ -119,6 +123,61 @@ def generate(args, id):
     plt.savefig(os.path.join(args['output'], f"sample_{id}_y.png"), dpi=300)
     plt.imshow(canvases[2], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_z.png"), dpi=300)
+
+    # Save image w/o the OOI
+    x, y, height, offset, voxels, material = ooi
+    xray_image = get_image_array(voxels, material, axis=2)
+    image_height, image_width = xray_image.shape[:2]
+    canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
+                                                                                      height + offset: height + offset + image_height,
+                                                                                      x:x + image_width] / xray_image
+    plt.imshow(canvases[0], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_x.png"), dpi=300)
+
+    xray_image = get_image_array(voxels, 'ooi', axis=2)
+    image_height, image_width = xray_image.shape[:2]
+    canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
+                                                                                      height + offset: height + offset + image_height,
+                                                                                      x:x + image_width] * xray_image
+    plt.imshow(canvases[0], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_with_ooi_x.png"), dpi=300)
+
+    xray_image = get_image_array(voxels, material, axis=1)
+    image_height, image_width = xray_image.shape[:2]
+    canvases[1][height + offset: height + offset + image_height, y:y + image_width] = canvases[1][
+                                                                                      height + offset: height + offset + image_height,
+                                                                                      y:y + image_width] / xray_image
+    plt.imshow(canvases[1], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_y.png"), dpi=300)
+
+    xray_image = get_image_array(voxels, 'ooi', axis=1)
+    image_height, image_width = xray_image.shape[:2]
+    canvases[1][height + offset: height + offset + image_height, y:y + image_width] = canvases[1][
+                                                                                      height + offset: height + offset + image_height,
+                                                                                      y:y + image_width] * xray_image
+    plt.imshow(canvases[1], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_with_ooi_y.png"), dpi=300)
+
+    xray_image = get_image_array(voxels, material, axis=0)
+    image_height, image_width = xray_image.shape[:2]
+    canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
+                                                         y:y + image_width] / xray_image
+    plt.imshow(canvases[2], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_z.png"), dpi=300)
+
+    xray_image = get_image_array(voxels, 'ooi', axis=0)
+    image_height, image_width = xray_image.shape[:2]
+    canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
+                                                         y:y + image_width] * xray_image
+    plt.imshow(canvases[2], origin='lower')
+    plt.savefig(os.path.join(args['output'], f"sample_{id}_with_ooi_z.png"), dpi=300)
+
+    # plt.imshow(canvases[0], origin='lower')
+    # plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_x.png"), dpi=300)
+    # plt.imshow(canvases[1], origin='lower')
+    # plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_y.png"), dpi=300)
+    # plt.imshow(canvases[2], origin='lower')
+    # plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_z.png"), dpi=300)
 
 
 def main(args):
@@ -134,6 +193,7 @@ def main(args):
 
     args['voxels'] = voxels
     args['materials'] = materials
+    args['items'] = [os.path.split(x)[1] for x in files]
 
     if args['parallel']:
         pool = mp.Pool(min(args['count'], mp.cpu_count()))
