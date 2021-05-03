@@ -85,24 +85,24 @@ def generate(args, id):
         elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface  # height + offset + item.shape[0]
         # Draw the object image on the canvas
         # View from longer side
-        xray_image = get_image_array(voxels, material, axis=2)
-        image_height, image_width = xray_image.shape[:2]
+        xray_image = get_image_array(voxels, material)
+        image_height, image_width = xray_image[2].shape[:2]
         canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
                                                                                           height + offset: height + offset + image_height,
-                                                                                          x:x + image_width] * xray_image
+                                                                                          x:x + image_width] * \
+                                                                                          xray_image[2]
 
         # View from wider side
-        xray_image = get_image_array(voxels, material, axis=1)
-        image_height, image_width = xray_image.shape[:2]
+        image_height, image_width = xray_image[1].shape[:2]
         canvases[1][height + offset: height + offset + image_height, y:y + image_width] = canvases[1][
                                                                                           height + offset: height + offset + image_height,
-                                                                                          y:y + image_width] * xray_image
+                                                                                          y:y + image_width] * \
+                                                                                          xray_image[1]
 
         # View from top
-        xray_image = get_image_array(voxels, material, axis=0)
-        image_height, image_width = xray_image.shape[:2]
+        image_height, image_width = xray_image[0].shape[:2]
         canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                             y:y + image_width] * xray_image
+                                                             y:y + image_width] * xray_image[0]
 
         # add background
         canvases[0] = get_background(canvases[0])
@@ -126,58 +126,47 @@ def generate(args, id):
 
     # Save image w/o the OOI
     x, y, height, offset, voxels, material = ooi
-    xray_image = get_image_array(voxels, material, axis=2)
-    image_height, image_width = xray_image.shape[:2]
+    xray_image = get_image_array(voxels, material)
+    image_height, image_width = xray_image[2].shape[:2]
     canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
                                                                                       height + offset: height + offset + image_height,
-                                                                                      x:x + image_width] / xray_image
+                                                                                      x:x + image_width] / xray_image[2]
     plt.imshow(canvases[0], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_x.png"), dpi=300)
 
-    xray_image = get_image_array(voxels, 'ooi', axis=2)
-    image_height, image_width = xray_image.shape[:2]
+    xray_ooi = get_image_array(voxels, 'ooi')
+    image_height, image_width = xray_ooi[2].shape[:2]
     canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
                                                                                       height + offset: height + offset + image_height,
-                                                                                      x:x + image_width] * xray_image
+                                                                                      x:x + image_width] * xray_ooi[2]
     plt.imshow(canvases[0], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_with_ooi_x.png"), dpi=300)
 
-    xray_image = get_image_array(voxels, material, axis=1)
-    image_height, image_width = xray_image.shape[:2]
+    image_height, image_width = xray_image[1].shape[:2]
     canvases[1][height + offset: height + offset + image_height, y:y + image_width] = canvases[1][
                                                                                       height + offset: height + offset + image_height,
-                                                                                      y:y + image_width] / xray_image
+                                                                                      y:y + image_width] / xray_image[1]
     plt.imshow(canvases[1], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_y.png"), dpi=300)
 
-    xray_image = get_image_array(voxels, 'ooi', axis=1)
-    image_height, image_width = xray_image.shape[:2]
+    image_height, image_width = xray_ooi[1].shape[:2]
     canvases[1][height + offset: height + offset + image_height, y:y + image_width] = canvases[1][
                                                                                       height + offset: height + offset + image_height,
-                                                                                      y:y + image_width] * xray_image
+                                                                                      y:y + image_width] * xray_ooi[1]
     plt.imshow(canvases[1], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_with_ooi_y.png"), dpi=300)
 
-    xray_image = get_image_array(voxels, material, axis=0)
-    image_height, image_width = xray_image.shape[:2]
+    image_height, image_width = xray_image[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                         y:y + image_width] / xray_image
+                                                         y:y + image_width] / xray_image[0]
     plt.imshow(canvases[2], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_z.png"), dpi=300)
 
-    xray_image = get_image_array(voxels, 'ooi', axis=0)
-    image_height, image_width = xray_image.shape[:2]
+    image_height, image_width = xray_ooi[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                         y:y + image_width] * xray_image
+                                                         y:y + image_width] * xray_ooi[0]
     plt.imshow(canvases[2], origin='lower')
     plt.savefig(os.path.join(args['output'], f"sample_{id}_with_ooi_z.png"), dpi=300)
-
-    # plt.imshow(canvases[0], origin='lower')
-    # plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_x.png"), dpi=300)
-    # plt.imshow(canvases[1], origin='lower')
-    # plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_y.png"), dpi=300)
-    # plt.imshow(canvases[2], origin='lower')
-    # plt.savefig(os.path.join(args['output'], f"sample_{id}_without_ooi_z.png"), dpi=300)
 
 
 def main(args):

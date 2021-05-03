@@ -16,13 +16,14 @@ from .poisson_disc import poissonDisc
 from .util import dir_path, read_stl, get_voxels, get_material, crop_model
 
 
-def get_image_array(voxels, material, axis=2):
+def get_image_array(voxels, material):
     mat = Material()
-    depth = np.expand_dims(voxels.sum(axis=axis) / 255, axis=2) * mat.get_const(material)
-    img = np.exp(-decay_constant * depth)
+    depth = [np.expand_dims(voxels.sum(axis=i) / 255, axis=2) * mat.get_const(material) for i in range(3)]
+    img = [np.exp(-decay_constant * d) for d in depth]
     return img
 
 
+# TODO: Update get_image_array calls below, it returns a list of images now.
 def stl_to_image(stl_file, args):
     print(f"LOG: {stl_file}...")
     material = get_material(stl_file)
