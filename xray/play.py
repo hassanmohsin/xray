@@ -5,6 +5,7 @@ import random
 from argparse import ArgumentParser
 from glob import glob
 from itertools import repeat
+from time import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -216,7 +217,10 @@ def argument_parser():
     with open(args.input) as f:
         args = json.load(f)
 
+    tic = time()
     main(args)
+    toc = time() - tic
+    print(f"Execution time: {toc} seconds.")
 
 
 if __name__ == '__main__':
