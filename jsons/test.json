@@ -1,11 +1,14 @@
 {
-  "input_dir": "./voxels_scaled",
+  "input_dir": "./voxels",
   "scale": 2.0,
   "rotated": true,
   "length": 1000,
   "width": 1000,
   "height": 500,
+  "ooi": "pick-x_metal_2.0_true.npy",
   "count": 20,
-  "output": "./output",
-  "parallel": true
+  "output_dir": "./output/pick-x",
+  "parallel": true,
+  "sideview": true,
+  "topview": true
 }
