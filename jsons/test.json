@@ -1,14 +1,14 @@
 {
-  "input_dir": "./voxels",
+  "stl_dir": "./stls",
+  "voxel_dir": "./voxels",
+  "image_dir": "./output/pick-x",
+  "ooi": "pick-x_metal_2.0_true.npy",
   "scale": 2.0,
   "rotated": true,
   "length": 1000,
   "width": 1000,
   "height": 500,
-  "ooi": "pick-x_metal_2.0_true.npy",
-  "count": 20,
-  "output_dir": "./output/pick-x",
+  "box_count": 4,
   "parallel": true,
-  "sideview": true,
-  "topview": true
+  "nproc": -1
 }
