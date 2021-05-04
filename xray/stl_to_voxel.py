@@ -5,6 +5,7 @@ import os
 import sys
 from functools import partial
 from glob import glob
+from time import time
 
 import numpy as np
 from p_tqdm import p_map
@@ -25,9 +26,14 @@ def stl_to_voxel(stl_file, args):
         yrot = np.random.normal(0., 5.0)
         zrot = np.random.choice([0, 90, 180, 270]) + np.random.normal(0., 5.0)
         print(f"{stl_file} is rotated by ({xrot}, {yrot}, {zrot})")
-        mesh.rotate([0.5, 0., 0.], math.radians(xrot))
-        mesh.rotate([0., 0.5, 0.], math.radians(yrot))
-        mesh.rotate([0., 0., 0.5], math.radians(zrot))
+        rot_mat = np.matmul(
+            mesh.rotation_matrix([1, 0, 0], math.radians(xrot)),
+            np.matmul(
+                mesh.rotation_matrix([0, 1, 0], math.radians(yrot)),
+                mesh.rotation_matrix([0, 0, 1], math.radians(zrot))
+            )
+        )
+        mesh.rotate_using_matrix(rot_mat)
     voxels, _ = get_voxels(mesh, args.scale)
     voxels = crop_model(voxels)
     np.save(voxel_file, voxels)
@@ -54,7 +60,10 @@ if __name__ == '__main__':
         os.makedirs(args.output)
 
     print("LOG: Converting .stl files...")
+    tic = time()
     pool = mp.Pool(args.nproc)
     p_map(partial(stl_to_voxel, args=args), stl_files)
     pool.close()
     print(f"Voxels files saved to {args.output}")
+    toc = time() - tic
+    print(f"Execution time: {toc} seconds.")
