@@ -42,6 +42,10 @@ def generate(args, id):
     # TODO: Make sure the object of interest is in the packed box
     ooi = []
 
+    # image rotations
+    rotations = np.random.randint(2, size=len(indx))
+    ooi_rotation = False
+
     print(f"BOX {id + 1}: Packing objects...")
     for ind in indx:
         voxels, material, item = args['voxels'][ind], args['materials'][ind], args['items'][ind]
@@ -87,6 +91,8 @@ def generate(args, id):
         # Draw the object image on the canvas
         # View from longer side
         xray_image = get_image_array(voxels, material)
+        if rotations[ind]:
+            xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
         image_height, image_width = xray_image[2].shape[:2]
         canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
                                                                                           height + offset: height + offset + image_height,
@@ -111,6 +117,8 @@ def generate(args, id):
         canvases[2] = get_background(canvases[2])
         if item == args['ooi']:
             ooi = [x, y, height, offset, voxels, material]
+            if rotations[ind]:
+                ooi_rotation = True
         counter += 1
 
     if len(ooi) > 0:
@@ -135,6 +143,9 @@ def generate(args, id):
     # Save image w and w/o the OOI
     xray_image = get_image_array(voxels, material)
     xray_ooi = get_image_array(voxels, 'ooi')
+    if ooi_rotation:
+        xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
+        xray_ooi = [np.rot90(i, 2, (0, 1)) for i in xray_ooi]
 
     image_height, image_width = xray_image[2].shape[:2]
     canvases[0][height + offset: height + offset + image_height, x:x + image_width] = canvases[0][
