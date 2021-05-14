@@ -6,10 +6,9 @@ decay_constant = 4
 class Material:
     def __init__(self):
         self.material_constant = {
-            'metal': [.161, .486, .965],  # blue (0, 0, 255)
-            'ooi': [0.01, 0.01, 0.01],  # red (255, 0, 0)
-            'plastic': [.957, .749, .478],  # orange(255, 165, 0)
-            'cloth': [.957, .749, .478],  # red orange (255, 69, 0)
+            'metal': [.161, .486, .965],  # blue (0, 0, 255),
+            'ooi': [0.01, 0.01, 0.01],  # black (0, 0, 0)
+            'plastic': [.957, .749, .478],  # orange(255, 165, 0),
             'leather': [.318, .741, .506],  # green (0, 255, 0),
             'unk': [.957, .749, .478]  # orange(255, 165, 0)
         }
