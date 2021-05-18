@@ -74,11 +74,21 @@ def generate(args, id):
         top_surface[~floor] = 0
         top_surface[floor] += gap
 
+        # TODO: Remove redundant search.
         # Find the minimum height at each possible position on the ground
-        for i in range(0, box.shape[1] - voxels.shape[1], stride):
-            for j in range(0, box.shape[2] - voxels.shape[2], stride):
-                d = bottom_surface - ground[i:i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
-                offsets.append([i, j, np.min(d)])  # append indices and the offset
+        i = 0
+        while i < box.shape[1] - voxels.shape[1]:
+            j = 0
+            while j < box.shape[2] - voxels.shape[2]:
+                d = bottom_surface - ground[i: i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
+                offsets.append([i, j, np.min(d)])
+                j += stride
+            i += stride
+
+        # for i in range(0, box.shape[1] - voxels.shape[1], stride):
+        #     for j in range(0, box.shape[2] - voxels.shape[2], stride):
+        #         d = bottom_surface - ground[i:i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
+        #         offsets.append([i, j, np.min(d)])  # append indices and the offset
 
         assert len(offsets) > 0
         a = max(offsets, key=lambda x: x[2])
