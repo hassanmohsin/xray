@@ -17,9 +17,12 @@ from .util import dir_path, read_stl, get_voxels, get_material, crop_model
 
 
 def get_image_array(voxels, material):
+    # TODO: remove hardcoded increment of decay_constant, add it to the config
+    dc = decay_constant + 10 if material == 'metal' else decay_constant
     mat = Material()
-    depth = [np.expand_dims(voxels.sum(axis=i) / 255, axis=2) * mat.get_const(material) for i in range(3)]
-    img = [np.exp(-decay_constant * d) for d in depth]
+    mat_const = mat.get_const(material)
+    depth = [np.expand_dims(voxels.sum(axis=i) / 255, axis=2) * mat_const for i in range(3)]
+    img = [np.exp(-dc * d) for d in depth]
     return img
 
 
