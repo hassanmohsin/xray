@@ -37,7 +37,8 @@ def generate(args, id):
 
     ground = np.zeros((box_length, box_width))
     elevation = np.zeros(ground.shape, dtype=np.int32)
-    gap = 20  # Minimum gap between object at (x, y) plane. (!)Lower gap increases runtime significantly.
+    stride = 20  # higher stride reduces runtime, too high (> object size) causes sparsity
+    gap = 150  # minimum gap between objects
     counter = 0
     # TODO: Make sure the object of interest is in the packed box
     ooi = []
@@ -58,19 +59,24 @@ def generate(args, id):
         floor = ceiling.copy()
 
         # TODO: Merge the loops below (Track the height)
+        # At each height
         for h in range(voxels.shape[0]):
+            # check if it has reached the bottom surface
             ceiling = ceiling | voxels[h]
+            # increase the height by 1 if it is not bottom surface and the pixel is not occupied
             bottom_surface[~voxels[h] & ~ceiling] += 1
+        # Remove the columns that doesn't contain any part of the object
         bottom_surface[~ceiling] = 0
 
         for h in range(voxels.shape[0] - 1, -1, -1):
             floor = floor | voxels[h]
             top_surface[~voxels[h] & ~floor] += 1
         top_surface[~floor] = 0
+        top_surface[floor] += gap
 
         # Find the minimum height at each possible position on the ground
-        for i in range(0, box.shape[1] - voxels.shape[1], gap):
-            for j in range(0, box.shape[2] - voxels.shape[2], gap):
+        for i in range(0, box.shape[1] - voxels.shape[1], stride):
+            for j in range(0, box.shape[2] - voxels.shape[2], stride):
                 d = bottom_surface - ground[i:i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
                 offsets.append([i, j, np.min(d)])  # append indices and the offset
 
