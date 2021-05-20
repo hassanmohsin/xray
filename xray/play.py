@@ -13,6 +13,7 @@ import numpy as np
 from .config import Material
 from .generate import get_image_array
 from .util import get_background
+from .heap import MaxHeap
 
 
 def get_material(s):
@@ -54,7 +55,6 @@ def generate(args, id):
     indx = list(range(len(args['voxels'])))
     random.shuffle(indx)
     box_height, box_length, box_width = args['height'], args['length'], args['width']
-    box = np.zeros((box_height, box_length, box_width), dtype=np.bool)  # Box to put the objects in
     # Xray images along 3 different axes (x, y, z)
     canvases = [np.ones((box_height, box_length, 3)),  # From longer side
                 np.ones((box_height, box_width, 3)),  # From wider side
@@ -73,30 +73,36 @@ def generate(args, id):
     ooi_rotation = False
 
     print(f"BOX {id + 1}: Packing objects...")
+    # Find the object positions
+    positions = []
     for ind in indx:
-        voxels, material, item = args['voxels'][ind], args['materials'][ind], args['items'][ind]
+        voxels = args['voxels'][ind]
         top_surface, bottom_surface = args['surfaces'][ind]
         offsets = []
         # TODO: Remove redundant search.
         # Find the minimum height at each possible position on the ground
         i = 0
-        while i < box.shape[1] - voxels.shape[1]:
+        while i < box_length - voxels.shape[1]:
             j = 0
-            while j < box.shape[2] - voxels.shape[2]:
+            while j < box_width - voxels.shape[2]:
                 d = bottom_surface - ground[i: i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
                 offsets.append([i, j, np.min(d)])
                 j += stride
             i += stride
 
-        assert len(offsets) > 0
         x, y, offset = max(offsets, key=lambda x: x[2])
         ground[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface - offset
         z = np.max(elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]]) + max(0, int(offset))
-        if z + voxels.shape[0] > box.shape[0]:
+        if z + voxels.shape[0] > box_height:
             # goes beyond the box if the object is placed, try the next one
             continue
-        box[z:z + voxels.shape[0], x:x + voxels.shape[1], y:y + voxels.shape[2]] = voxels
-        elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface  # height + offset + item.shape[0]
+        elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface
+        positions.append([ind, x, y, z])
+
+    # Place the objects
+    for position in positions:
+        ind, x, y, z = position
+        voxels, material, item = args['voxels'][ind], args['materials'][ind], args['items'][ind]
         # Draw the object image on the canvas
         # View from longer side
         xray_image = get_image_array(voxels, material)
