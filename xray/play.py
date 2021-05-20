@@ -74,6 +74,7 @@ def generate(args, id):
     print(f"BOX {id + 1}: Packing objects...")
     # Find the object positions
     positions = []
+    tic = time()
     for ind in indx:
         voxels = args['voxels'][ind]
         top_surface, bottom_surface = args['surfaces'][ind]
@@ -81,31 +82,33 @@ def generate(args, id):
         # TODO: Remove redundant search.
         # Find the minimum height at each possible position on the ground
         i = 0
-        while i < box_length - voxels.shape[1]:
+        while i < box_length - voxels[1]:
             j = 0
-            while j < box_width - voxels.shape[2]:
+            while j < box_width - voxels[2]:
                 d = bottom_surface - ground[i: i + bottom_surface.shape[0], j:j + bottom_surface.shape[1]]
                 offsets.append([i, j, np.min(d)])
                 j += stride
             i += stride
 
         x, y, offset = max(offsets, key=lambda x: x[2])
-        z = np.max(elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]]) + max(0, int(offset))
-        if z + voxels.shape[0] > box_height:
+        z = np.max(elevation[x:x + voxels[1], y:y + voxels[2]]) + max(0, int(offset))
+        if z + voxels[0] > box_height:
             # goes beyond the box if the object is placed, try the next one
             continue
 
-        ground[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface - offset
-        elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface
+        ground[x:x + voxels[1], y:y + voxels[2]] = top_surface - offset
+        elevation[x:x + voxels[1], y:y + voxels[2]] = top_surface
         positions.append([ind, x, y, z])
 
+    print("finding positions: ", time() - tic)
+    tic = time()
     # Place the objects
     for position in positions:
         ind, x, y, z = position
         voxels, material, item = args['voxels'][ind], args['materials'][ind], args['items'][ind]
         # Draw the object image on the canvas
         # View from longer side
-        xray_image = get_image_array(voxels, material)
+        xray_image = args['images'][ind]
         if rotations[ind]:
             xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
         image_height, image_width = xray_image[2].shape[:2]
@@ -131,20 +134,21 @@ def generate(args, id):
         canvases[1] = get_background(canvases[1])
         canvases[2] = get_background(canvases[2])
         if item == args['ooi']:
-            ooi = [x, y, z, voxels, material]
+            ooi = [x, y, z]
             if rotations[ind]:
                 ooi_rotation = True
         counter += 1
 
     if len(ooi) > 0:
-        x, y, z, voxels, material = ooi
+        x, y, z = ooi
     else:
         # TODO: Force packing the ooi into the box
         print(f"BOX {id + 1}: The object of interest wasn't packed, no image was generated, exiting...")
         return
 
     print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
-
+    print("generating canvases: ", time() - tic)
+    tic = time()
     # Saving the images
     plt.axis('off')
     plt.tight_layout()
@@ -156,8 +160,7 @@ def generate(args, id):
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_z.png"), dpi=300)
 
     # Save image w and w/o the OOI
-    xray_image = get_image_array(voxels, material)
-    xray_ooi = get_image_array(voxels, 'ooi')
+    xray_image, xray_ooi = args['ooi_images']
     if ooi_rotation:
         xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
         xray_ooi = [np.rot90(i, 2, (0, 1)) for i in xray_ooi]
@@ -197,9 +200,11 @@ def generate(args, id):
                                                          y:y + image_width] * xray_ooi[0]
     plt.imshow(canvases[2], origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"), dpi=300)
+    print("image generation: ", time() - tic)
 
 
 def main(args):
+    tic = time()
     # Load the voxels
     files = glob(
         os.path.join(args['voxel_dir'], '*' + str(args['scale']) + '_' + str(args['rotated']).lower() + ".npy"))
@@ -214,27 +219,34 @@ def main(args):
         os.makedirs(args['image_dir'])
 
     # TODO: Share these variables among the processes instead of passing as an argument
+    # TODO: assign the variables directly to args
     voxels = [np.load(f) for f in files]
     materials = [get_material(f) for f in files]
     items = [os.path.split(x)[1] for x in files]
+    images = [get_image_array(v, m) for (v, m) in zip(voxels, materials)]
+    # TODO: remove hardcoded 'metal'
+    ooi_images = [get_image_array(np.load(os.path.join(args['voxel_dir'], args['ooi'])), 'metal'),
+                  get_image_array(np.load(os.path.join(args['voxel_dir'], args['ooi'])), 'ooi')]
 
     # Find the top and bottom surfaces
 
-    args['voxels'] = voxels
+    args['voxels'] = [v.shape for v in voxels]
     args['materials'] = materials
     args['items'] = items
+    args['images'] = images
+    args['ooi_images'] = ooi_images
+    args['surfaces'] = [find_top_bottom_surfaces(v) for v in voxels]
+    del voxels
+    print("preprocessing: ", time() - tic)
 
     if args['parallel']:
         pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
-        # Find the top and bottom surfaces for each object
-        args['surfaces'] = pool.map(find_top_bottom_surfaces, voxels)
         # Generate the images
+        # TODO: remove/find better way for image indexing
         pool.starmap(generate, zip(repeat(args), range(args['box_count'])))
         pool.close()
     else:
         for i in range(args['box_count']):
-            # Find the top and bottom surfaces for each object
-            args['surfaces'] = [find_top_bottom_surfaces(v) for v in voxels]
             # Generate the images
             generate(args, i)
 
