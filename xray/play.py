@@ -13,7 +13,6 @@ import numpy as np
 from .config import Material
 from .generate import get_image_array
 from .util import get_background
-from .heap import MaxHeap
 
 
 def get_material(s):
@@ -91,11 +90,12 @@ def generate(args, id):
             i += stride
 
         x, y, offset = max(offsets, key=lambda x: x[2])
-        ground[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface - offset
         z = np.max(elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]]) + max(0, int(offset))
         if z + voxels.shape[0] > box_height:
             # goes beyond the box if the object is placed, try the next one
             continue
+
+        ground[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface - offset
         elevation[x:x + voxels.shape[1], y:y + voxels.shape[2]] = top_surface
         positions.append([ind, x, y, z])
 
