@@ -6,4 +6,5 @@ temp/
 *.png
 *ipynb
 stls/
-
+voxels/
+output
