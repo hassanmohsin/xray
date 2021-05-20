@@ -7,7 +7,7 @@ from glob import glob
 from itertools import repeat
 
 import matplotlib.pyplot as plt
-import numpy as np
+import cupy as np
 from skimage.transform import rotate
 from tqdm import tqdm
 

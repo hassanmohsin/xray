@@ -1,7 +1,7 @@
 import math
 import os
 
-import numpy as np
+import cupy as np
 from PIL import ImageFilter, Image as Im
 from stl import Mesh
 
@@ -98,9 +98,9 @@ def get_background(img):
     bg[xs - 1, ys - 1] = orange
     bg[xs + 1, ys + 1] = orange
 
-    bg = Im.fromarray(bg.astype(np.uint8))
+    bg = Im.fromarray(np.asnumpy(bg).astype('uint8'))
     bg = bg.filter(ImageFilter.GaussianBlur(radius=5))
     bg = np.array(bg)
-    mask = img == (1., 1., 1.)
+    mask = img == np.asarray([1., 1., 1.])
     img[mask] = bg[mask]/255.
     return img

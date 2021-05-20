@@ -7,8 +7,8 @@ from glob import glob
 from itertools import repeat
 from time import time
 
+import cupy as np
 import matplotlib.pyplot as plt
-import numpy as np
 
 from .config import Material
 from .generate import get_image_array
@@ -150,13 +150,14 @@ def generate(args, id):
     print("generating canvases: ", time() - tic)
     tic = time()
     # Saving the images
+    # canvases = [np.asnumpy(c) for c in canvases]
     plt.axis('off')
     plt.tight_layout()
-    plt.imshow(canvases[0], origin='lower')
+    plt.imshow(np.asnumpy(canvases[0]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_x.png"), dpi=300)
-    plt.imshow(canvases[1], origin='lower')
+    plt.imshow(np.asnumpy(canvases[1]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_y.png"), dpi=300)
-    plt.imshow(canvases[2], origin='lower')
+    plt.imshow(np.asnumpy(canvases[2]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_z.png"), dpi=300)
 
     # Save image w and w/o the OOI
@@ -168,37 +169,37 @@ def generate(args, id):
     image_height, image_width = xray_image[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] / xray_image[2]
-    plt.imshow(canvases[0], origin='lower')
+    plt.imshow(np.asnumpy(canvases[0]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_x.png"), dpi=300)
 
     image_height, image_width = xray_ooi[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] * xray_ooi[2]
-    plt.imshow(canvases[0], origin='lower')
+    plt.imshow(np.asnumpy(canvases[0]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_x.png"), dpi=300)
 
     image_height, image_width = xray_image[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] / xray_image[1]
-    plt.imshow(canvases[1], origin='lower')
+    plt.imshow(np.asnumpy(canvases[1]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_y.png"), dpi=300)
 
     image_height, image_width = xray_ooi[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] * xray_ooi[1]
-    plt.imshow(canvases[1], origin='lower')
+    plt.imshow(np.asnumpy(canvases[1]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_y.png"), dpi=300)
 
     image_height, image_width = xray_image[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] / xray_image[0]
-    plt.imshow(canvases[2], origin='lower')
+    plt.imshow(np.asnumpy(canvases[2]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_z.png"), dpi=300)
 
     image_height, image_width = xray_ooi[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] * xray_ooi[0]
-    plt.imshow(canvases[2], origin='lower')
+    plt.imshow(np.asnumpy(canvases[2]), origin='lower')
     plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"), dpi=300)
     print("image generation: ", time() - tic)
 
