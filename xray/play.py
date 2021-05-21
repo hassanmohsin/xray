@@ -53,16 +53,18 @@ def generate(args, id):
     # Shuffle the files (object) to change the order they are put in the box
     indx = list(range(len(args['voxels'])))
     random.shuffle(indx)
-    box_height, box_length, box_width = args['height'], args['length'], args['width']
+    box_height = args['height'] + 2 * args['gap']
+    box_length = args['length'] + 2 * args['gap']
+    box_width = args['width'] + 2 * args['gap']
+
     # Xray images along 3 different axes (x, y, z)
-    canvases = [np.ones((box_height, box_length, 3)),  # From longer side
-                np.ones((box_height, box_width, 3)),  # From wider side
-                np.ones((box_length, box_width, 3))]  # From top
+    canvases = [np.ones((args['height'], args['length'], 3)),  # From longer side
+                np.ones((args['height'], args['width'], 3)),  # From wider side
+                np.ones((args['length'], args['width'], 3))]  # From top
 
     ground = np.zeros((box_length, box_width))
     elevation = np.zeros(ground.shape, dtype=np.int32)
-    stride = 20  # higher stride reduces runtime, too high (> object size) causes sparsity
-    gap = 150  # minimum gap between objects
+    stride = max(args['stride'], args['gap'] // 2)
     counter = 0
     # TODO: Make sure the object of interest is in the packed box
     ooi = []
@@ -78,6 +80,8 @@ def generate(args, id):
     for ind in indx:
         voxels = args['voxels'][ind]
         top_surface, bottom_surface = args['surfaces'][ind]
+        top_surface = np.pad(top_surface, args['gap'])
+        bottom_surface = np.pad(bottom_surface, args['gap'])
         offsets = []
         # TODO: Remove redundant search.
         # Find the minimum height at each possible position on the ground
@@ -105,12 +109,12 @@ def generate(args, id):
     # Place the objects
     for position in positions:
         ind, x, y, z = position
-        voxels, material, item = args['voxels'][ind], args['materials'][ind], args['items'][ind]
         # Draw the object image on the canvas
         # View from longer side
         xray_image = args['images'][ind]
         if rotations[ind]:
             xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
+
         image_height, image_width = xray_image[2].shape[:2]
         canvases[0][z: z + image_height, x:x + image_width] = canvases[0][
                                                               z: z + image_height,
@@ -133,7 +137,7 @@ def generate(args, id):
         canvases[0] = get_background(canvases[0])
         canvases[1] = get_background(canvases[1])
         canvases[2] = get_background(canvases[2])
-        if item == args['ooi']:
+        if args['items'][ind] == args['ooi']:
             ooi = [x, y, z]
             if rotations[ind]:
                 ooi_rotation = True
@@ -153,11 +157,11 @@ def generate(args, id):
     plt.axis('off')
     plt.tight_layout()
     plt.imshow(canvases[0], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_x.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_x.png"), dpi=args['dpi'])
     plt.imshow(canvases[1], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_y.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_y.png"), dpi=args['dpi'])
     plt.imshow(canvases[2], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_z.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_z.png"), dpi=args['dpi'])
 
     # Save image w and w/o the OOI
     xray_image, xray_ooi = args['ooi_images']
@@ -169,37 +173,37 @@ def generate(args, id):
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] / xray_image[2]
     plt.imshow(canvases[0], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_x.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_x.png"), dpi=args['dpi'])
 
     image_height, image_width = xray_ooi[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] * xray_ooi[2]
     plt.imshow(canvases[0], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_x.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_x.png"), dpi=args['dpi'])
 
     image_height, image_width = xray_image[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] / xray_image[1]
     plt.imshow(canvases[1], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_y.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_y.png"), dpi=args['dpi'])
 
     image_height, image_width = xray_ooi[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] * xray_ooi[1]
     plt.imshow(canvases[1], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_y.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_y.png"), dpi=args['dpi'])
 
     image_height, image_width = xray_image[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] / xray_image[0]
     plt.imshow(canvases[2], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_z.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_z.png"), dpi=args['dpi'])
 
     image_height, image_width = xray_ooi[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] * xray_ooi[0]
     plt.imshow(canvases[2], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"), dpi=300)
+    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"), dpi=args['dpi'])
     print("image generation: ", time() - tic)
 
 
@@ -230,7 +234,7 @@ def main(args):
 
     # Find the top and bottom surfaces
 
-    args['voxels'] = [v.shape for v in voxels]
+    args['voxels'] = [(tuple(j + 2 * args['gap'] for j in i)) for i in [v.shape for v in voxels]]
     args['materials'] = materials
     args['items'] = items
     args['images'] = images
