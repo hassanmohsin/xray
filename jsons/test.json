@@ -12,5 +12,6 @@
   "parallel": true,
   "nproc": -1,
   "gap": 0,
-  "stride": 50
+  "stride": 50,
+  "sigma": [2, 1, 0]
 }

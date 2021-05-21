@@ -9,6 +9,7 @@ from time import time
 
 import numpy as np
 from PIL import Image as Im
+from scipy.ndimage import gaussian_filter
 
 from .config import Material
 from .util import get_background, get_image_array
@@ -148,11 +149,11 @@ def generate(args, id):
 
     print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
 
-    img = Im.fromarray((canvases[0][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[0][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_x.png"))
-    img = Im.fromarray((canvases[1][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[1][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_y.png"))
-    img = Im.fromarray((canvases[2][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[2][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_z.png"))
 
     # Save image w and w/o the OOI
@@ -164,37 +165,37 @@ def generate(args, id):
     image_height, image_width = xray_image[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] / xray_image[2]
-    img = Im.fromarray((canvases[0][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[0][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_x.png"))
 
     image_height, image_width = xray_ooi[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] * xray_ooi[2]
-    img = Im.fromarray((canvases[0][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[0][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_x.png"))
 
     image_height, image_width = xray_image[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] / xray_image[1]
-    img = Im.fromarray((canvases[1][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[1][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_y.png"))
 
     image_height, image_width = xray_ooi[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] * xray_ooi[1]
-    img = Im.fromarray((canvases[1][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[1][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_y.png"))
 
     image_height, image_width = xray_image[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] / xray_image[0]
-    img = Im.fromarray((canvases[2][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[2][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_z.png"))
 
     image_height, image_width = xray_ooi[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] * xray_ooi[0]
-    img = Im.fromarray((canvases[2][::-1, :, :] * 255).astype('uint8'))
+    img = Im.fromarray((gaussian_filter(canvases[2][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"))
 
 
