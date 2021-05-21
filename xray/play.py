@@ -7,8 +7,8 @@ from glob import glob
 from itertools import repeat
 from time import time
 
-import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image as Im
 
 from .config import Material
 from .generate import get_image_array
@@ -76,7 +76,6 @@ def generate(args, id):
     print(f"BOX {id + 1}: Packing objects...")
     # Find the object positions
     positions = []
-    tic = time()
     for ind in indx:
         voxels = args['voxels'][ind]
         top_surface, bottom_surface = args['surfaces'][ind]
@@ -104,8 +103,6 @@ def generate(args, id):
         elevation[x:x + voxels[1], y:y + voxels[2]] = top_surface
         positions.append([ind, x, y, z])
 
-    print("finding positions: ", time() - tic)
-    tic = time()
     # Place the objects
     for position in positions:
         ind, x, y, z = position
@@ -151,17 +148,13 @@ def generate(args, id):
         return
 
     print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
-    print("generating canvases: ", time() - tic)
-    tic = time()
-    # Saving the images
-    plt.axis('off')
-    plt.tight_layout()
-    plt.imshow(canvases[0], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_x.png"), dpi=args['dpi'])
-    plt.imshow(canvases[1], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_y.png"), dpi=args['dpi'])
-    plt.imshow(canvases[2], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_z.png"), dpi=args['dpi'])
+
+    img = Im.fromarray((canvases[0][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_x.png"))
+    img = Im.fromarray((canvases[1][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_y.png"))
+    img = Im.fromarray((canvases[2][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_z.png"))
 
     # Save image w and w/o the OOI
     xray_image, xray_ooi = args['ooi_images']
@@ -172,43 +165,41 @@ def generate(args, id):
     image_height, image_width = xray_image[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] / xray_image[2]
-    plt.imshow(canvases[0], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_x.png"), dpi=args['dpi'])
+    img = Im.fromarray((canvases[0][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_x.png"))
 
     image_height, image_width = xray_ooi[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] * xray_ooi[2]
-    plt.imshow(canvases[0], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_x.png"), dpi=args['dpi'])
+    img = Im.fromarray((canvases[0][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_x.png"))
 
     image_height, image_width = xray_image[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] / xray_image[1]
-    plt.imshow(canvases[1], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_y.png"), dpi=args['dpi'])
+    img = Im.fromarray((canvases[1][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_y.png"))
 
     image_height, image_width = xray_ooi[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] * xray_ooi[1]
-    plt.imshow(canvases[1], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_y.png"), dpi=args['dpi'])
+    img = Im.fromarray((canvases[1][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_y.png"))
 
     image_height, image_width = xray_image[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] / xray_image[0]
-    plt.imshow(canvases[2], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_z.png"), dpi=args['dpi'])
+    img = Im.fromarray((canvases[2][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_z.png"))
 
     image_height, image_width = xray_ooi[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] * xray_ooi[0]
-    plt.imshow(canvases[2], origin='lower')
-    plt.savefig(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"), dpi=args['dpi'])
-    print("image generation: ", time() - tic)
+    img = Im.fromarray((canvases[2][::-1, :, :] * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"))
 
 
 def main(args):
-    tic = time()
     # Load the voxels
     files = glob(
         os.path.join(args['voxel_dir'], '*' + str(args['scale']) + '_' + str(args['rotated']).lower() + ".npy"))
@@ -241,7 +232,6 @@ def main(args):
     args['ooi_images'] = ooi_images
     args['surfaces'] = [find_top_bottom_surfaces(v) for v in voxels]
     del voxels
-    print("preprocessing: ", time() - tic)
 
     if args['parallel']:
         pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
@@ -268,8 +258,7 @@ def argument_parser():
 
     tic = time()
     main(args)
-    toc = time() - tic
-    print(f"Execution time: {toc} seconds.")
+    print(f"Execution time: {time() - tic} seconds.")
 
 
 if __name__ == '__main__':

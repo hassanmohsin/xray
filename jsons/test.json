@@ -8,10 +8,9 @@
   "length": 1000,
   "width": 1000,
   "height": 500,
-  "box_count": 4,
+  "box_count": 12,
   "parallel": true,
   "nproc": -1,
   "gap": 0,
-  "stride": 50,
-  "dpi": 300
+  "stride": 50
 }
