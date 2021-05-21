@@ -2,6 +2,7 @@
 .idea/
 output*/
 __pycache__/
+*.pyc
 temp/
 *.png
 *ipynb
