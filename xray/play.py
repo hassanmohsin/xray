@@ -75,8 +75,16 @@ def generate(args, id):
 
     print(f"BOX {id + 1}: Packing objects...")
     # Find the object positions
-    positions = []
-    for ind in indx:
+    # Place 4 objects in 4 corners
+    # TODO: update `ground` and `elevation` for the following four placement
+    positions = [
+        [indx[0], 0, 0, 0],
+        [indx[1], box_length - args['voxels'][indx[1]][1], 0, 0],
+        [indx[2], 0, box_width - args['voxels'][indx[2]][2], 0],
+        [indx[3], box_length - args['voxels'][indx[3]][1], box_width - args['voxels'][indx[3]][2], 0]
+    ]
+
+    for ind in indx[4:]:
         voxels = args['voxels'][ind]
         top_surface, bottom_surface = args['surfaces'][ind]
         top_surface = np.pad(top_surface, args['gap'])
