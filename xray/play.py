@@ -11,8 +11,7 @@ import numpy as np
 from PIL import Image as Im
 
 from .config import Material
-from .generate import get_image_array
-from .util import get_background
+from .util import get_background, get_image_array
 
 
 def get_material(s):

@@ -5,6 +5,7 @@ import numpy as np
 from PIL import ImageFilter, Image as Im
 from stl import Mesh
 
+from .config import decay_constant, Material
 from .perimeter import lines_to_voxels
 from .slice import to_intersecting_lines
 
@@ -102,5 +103,15 @@ def get_background(img):
     bg = bg.filter(ImageFilter.GaussianBlur(radius=5))
     bg = np.array(bg)
     mask = img == (1., 1., 1.)
-    img[mask] = bg[mask]/255.
+    img[mask] = bg[mask] / 255.
+    return img
+
+
+def get_image_array(voxels, material):
+    # TODO: remove hardcoded increment of decay_constant, add it to the config
+    dc = decay_constant + 10 if material == 'metal' else decay_constant
+    mat = Material()
+    mat_const = mat.get_const(material)
+    depth = [np.expand_dims(voxels.sum(axis=i) / 255, axis=2) * mat_const for i in range(3)]
+    img = [np.exp(-dc * d) for d in depth]
     return img
