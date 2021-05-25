@@ -164,23 +164,71 @@ def generate(args, id):
 
     # TODO: avoid repetitive gaussian filtering
     # Save images with and without bounding boxes
-    # img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    # img.save(os.path.join(args['image_dir'], f"image_x_{id}.png"))
-    # img1 = ImageDraw.Draw(img)
-    # img1.rectangle(ooi_coordinates['x'], outline="red")
-    # img.save(os.path.join(args['image_dir'], f"image_x_bb_{id}.png"))
-    #
-    # img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    # img.save(os.path.join(args['image_dir'], f"image_y_{id}.png"))
-    # img1 = ImageDraw.Draw(img)
-    # img1.rectangle(ooi_coordinates['y'], outline="red")
-    # img.save(os.path.join(args['image_dir'], f"image_y_bb_{id}.png"))
+    # Along X-axis
+    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['dirs']['ooi'], f"image-x_{id}.png"))
+    img1 = ImageDraw.Draw(img)
+    img1.rectangle(ooi_coordinates['x'], outline="red")
+    img.save(os.path.join(args['dirs']['ground_truth'], f"image-x_{id}.png"))
 
+    # Write annotations
+    (xmin, ymin), (xmax, ymax) = ooi_coordinates['x']
+    info = {
+        "id": id,
+        "xmin": xmin,
+        "ymin": int(ymin),
+        "xmax": xmax,
+        "ymax": int(ymax),
+        "directory": args['dirs']['ooi'],
+        "filename": f"image-x_{id}.png"
+    }
+
+    with open(os.path.join(args['dirs']['annotations'], f"annot-x_{id}.json"), 'w') as f:
+        json.dump(info, f)
+
+    # Along Y-axis
+    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['dirs']['ooi'], f"image-y_{id}.png"))
+    img1 = ImageDraw.Draw(img)
+    img1.rectangle(ooi_coordinates['y'], outline="red")
+    img.save(os.path.join(args['dirs']['ground_truth'], f"image-y_{id}.png"))
+
+    # Write annotations
+    (xmin, ymin), (xmax, ymax) = ooi_coordinates['y']
+    info = {
+        "id": id,
+        "xmin": xmin,
+        "ymin": int(ymin),
+        "xmax": xmax,
+        "ymax": int(ymax),
+        "directory": args['dirs']['ooi'],
+        "filename": f"image-y_{id}.png"
+    }
+
+    with open(os.path.join(args['dirs']['annotations'], f"annot-y_{id}.json"), 'w') as f:
+        json.dump(info, f)
+
+    # Along Z-axis
     img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_{id}.png"))
+    img.save(os.path.join(args['dirs']['ooi'], f"image-z_{id}.png"))
     img1 = ImageDraw.Draw(img)
     img1.rectangle(ooi_coordinates['z'], outline="red")
-    img.save(os.path.join(args['image_dir'], f"image_bb_{id}.png"))
+    img.save(os.path.join(args['dirs']['ground_truth'], f"image-z_{id}.png"))
+
+    # Write annotations
+    (xmin, ymin), (xmax, ymax) = ooi_coordinates['z']
+    info = {
+        "id": id,
+        "xmin": xmin,
+        "ymin": int(ymin),
+        "xmax": xmax,
+        "ymax": int(ymax),
+        "directory": args['dirs']['ooi'],
+        "filename": f"image-z_{id}.png"
+    }
+
+    with open(os.path.join(args['dirs']['annotations'], f"annot-z_{id}.json"), 'w') as f:
+        json.dump(info, f)
 
     # Save image w and w/o the OOI
     xray_image, xray_ooi = args['ooi_images']
@@ -216,7 +264,7 @@ def generate(args, id):
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] / xray_image[0]
     img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_no_ooi_{id}.png"))
+    img.save(os.path.join(args['dirs']['no_ooi'], f"image-z_{id}.png"))
 
     # image_height, image_width = xray_ooi[0].shape[:2]
     # canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
@@ -233,8 +281,21 @@ def main(args):
     if args['ooi'] and not os.path.isfile(os.path.join(args['voxel_dir'], args['ooi'])):
         raise FileNotFoundError(f"Object of interest {args['ooi']} not found.")
 
-    if not os.path.isdir(args['image_dir']):
-        os.makedirs(args['image_dir'])
+    ooi_dir = os.path.join(args['dataset_dir'], 'images', 'ooi')
+    no_ooi_dir = os.path.join(args['dataset_dir'], 'images', 'no_ooi')
+    ground_truth_dir = os.path.join(args['dataset_dir'], 'images', 'ground_truth')
+    annotations_dir = os.path.join(args['dataset_dir'], 'annotations')
+
+    args['dirs'] = {
+        'ooi': ooi_dir,
+        'no_ooi': no_ooi_dir,
+        'ground_truth': ground_truth_dir,
+        'annotations': annotations_dir
+    }
+
+    for v in args['dirs'].values():
+        if not os.path.isdir(v):
+            os.makedirs(v)
 
     # TODO: Share these variables among the processes instead of passing as an argument
     # TODO: assign the variables directly to args
@@ -265,7 +326,7 @@ def main(args):
         pool.starmap(generate, zip(repeat(args), range(args['sample_count'])))
         pool.close()
     else:
-        for i in range(args['box_count']):
+        for i in range(args['sample_count']):
             # Generate the images
             generate(args, i)
 

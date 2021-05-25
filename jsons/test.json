@@ -1,7 +1,7 @@
 {
   "stl_dir": "./stls",
   "voxel_dir": "./voxels",
-  "image_dir": "./test-images",
+  "dataset_dir":  "./dataset",
   "ooi": "pick-x_metal_2.0_true.npy",
   "scale": 2.0,
   "rotated": true,
