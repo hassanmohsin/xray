@@ -8,7 +8,7 @@ from itertools import repeat
 from time import time
 
 import numpy as np
-from PIL import Image as Im
+from PIL import Image as Im, ImageDraw
 from scipy.ndimage import gaussian_filter
 
 from .config import Material
@@ -68,6 +68,7 @@ def generate(args, id):
     counter = 0
     # TODO: Make sure the object of interest is in the packed box
     ooi = []
+    ooi_coordinates = {}
 
     # image rotations
     rotations = np.random.randint(2, size=len(indx))
@@ -126,27 +127,37 @@ def generate(args, id):
                                                               x:x + image_width] * \
                                                               xray_image[2]
 
+        if args['items'][ind] == args['ooi']:
+            ooi_coordinates['x'] = [(x, canvases[0].shape[0] - (z + image_height)),
+                                    (x + image_width, canvases[0].shape[0] - z)]
+
         # View from wider side
         image_height, image_width = xray_image[1].shape[:2]
         canvases[1][z: z + image_height, y:y + image_width] = canvases[1][
                                                               z: z + image_height,
                                                               y:y + image_width] * \
                                                               xray_image[1]
-
+        if args['items'][ind] == args['ooi']:
+            ooi_coordinates['y'] = [(y, canvases[1].shape[0] - (z + image_height)),
+                                    (y + image_width, canvases[1].shape[0] - z)]
         # View from top
         image_height, image_width = xray_image[0].shape[:2]
         canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                              y:y + image_width] * xray_image[0]
+        if args['items'][ind] == args['ooi']:
+            ooi_coordinates['z'] = [(y, canvases[2].shape[0] - (x + image_height)),
+                                    (y + image_width, canvases[2].shape[0] - x)]
 
-        # add background
-        canvases[0] = get_background(canvases[0])
-        canvases[1] = get_background(canvases[1])
-        canvases[2] = get_background(canvases[2])
         if args['items'][ind] == args['ooi']:
             ooi = [x, y, z]
             if rotations[ind]:
                 ooi_rotation = True
         counter += 1
+
+    # add background
+    canvases[0] = get_background(canvases[0])
+    canvases[1] = get_background(canvases[1])
+    canvases[2] = get_background(canvases[2])
 
     if len(ooi) > 0:
         x, y, z = ooi
@@ -157,12 +168,23 @@ def generate(args, id):
 
     print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
 
+    # TODO: avoid repetitive gaussian filtering
+    # Save images with and without bounding boxes
     img = Im.fromarray((gaussian_filter(canvases[0][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_x.png"))
+    img1 = ImageDraw.Draw(img)
+    img1.rectangle(ooi_coordinates['x'], outline="red")
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_bb_x.png"))
     img = Im.fromarray((gaussian_filter(canvases[1][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_y.png"))
+    img1 = ImageDraw.Draw(img)
+    img1.rectangle(ooi_coordinates['y'], outline="red")
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_bb_y.png"))
     img = Im.fromarray((gaussian_filter(canvases[2][::-1, :, :], args['sigma']) * 255).astype('uint8'))
     img.save(os.path.join(args['image_dir'], f"sample_{id}_z.png"))
+    img1 = ImageDraw.Draw(img)
+    img1.rectangle(ooi_coordinates['z'], outline="red")
+    img.save(os.path.join(args['image_dir'], f"sample_{id}_bb_z.png"))
 
     # Save image w and w/o the OOI
     xray_image, xray_ooi = args['ooi_images']
