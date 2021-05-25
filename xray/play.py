@@ -3,7 +3,6 @@ import multiprocessing as mp
 import os
 import random
 from argparse import ArgumentParser
-from glob import glob
 from itertools import repeat
 from time import time
 
@@ -51,7 +50,7 @@ def find_top_bottom_surfaces(voxels):
 
 def generate(args, id):
     # Shuffle the files (object) to change the order they are put in the box
-    indx = list(range(len(args['voxels'])))
+    indx = list(range(min(len(args['items']), args['item_count'])))
     random.shuffle(indx)
     box_height = args['height'] + 2 * args['gap']
     box_length = args['length'] + 2 * args['gap']
@@ -154,11 +153,6 @@ def generate(args, id):
                 ooi_rotation = True
         counter += 1
 
-    # add background
-    canvases[0] = get_background(canvases[0])
-    canvases[1] = get_background(canvases[1])
-    canvases[2] = get_background(canvases[2])
-
     if len(ooi) > 0:
         x, y, z = ooi
     else:
@@ -170,21 +164,23 @@ def generate(args, id):
 
     # TODO: avoid repetitive gaussian filtering
     # Save images with and without bounding boxes
-    img = Im.fromarray((gaussian_filter(canvases[0][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_x.png"))
+    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_x_{id}.png"))
     img1 = ImageDraw.Draw(img)
     img1.rectangle(ooi_coordinates['x'], outline="red")
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_bb_x.png"))
-    img = Im.fromarray((gaussian_filter(canvases[1][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_y.png"))
+    img.save(os.path.join(args['image_dir'], f"image_x_bb_{id}.png"))
+
+    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_y_{id}.png"))
     img1 = ImageDraw.Draw(img)
     img1.rectangle(ooi_coordinates['y'], outline="red")
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_bb_y.png"))
-    img = Im.fromarray((gaussian_filter(canvases[2][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_z.png"))
+    img.save(os.path.join(args['image_dir'], f"image_y_bb_{id}.png"))
+
+    img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_z_{id}.png"))
     img1 = ImageDraw.Draw(img)
     img1.rectangle(ooi_coordinates['z'], outline="red")
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_bb_z.png"))
+    img.save(os.path.join(args['image_dir'], f"image_z_bb_{id}.png"))
 
     # Save image w and w/o the OOI
     xray_image, xray_ooi = args['ooi_images']
@@ -195,47 +191,44 @@ def generate(args, id):
     image_height, image_width = xray_image[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] / xray_image[2]
-    img = Im.fromarray((gaussian_filter(canvases[0][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_x.png"))
+    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_x_no_ooi_{id}.png"))
 
     image_height, image_width = xray_ooi[2].shape[:2]
     canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                           x:x + image_width] * xray_ooi[2]
-    img = Im.fromarray((gaussian_filter(canvases[0][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_x.png"))
+    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_x_ooi_{id}.png"))
 
     image_height, image_width = xray_image[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] / xray_image[1]
-    img = Im.fromarray((gaussian_filter(canvases[1][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_y.png"))
+    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_y_no_ooi_{id}.png"))
 
     image_height, image_width = xray_ooi[1].shape[:2]
     canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                           y:y + image_width] * xray_ooi[1]
-    img = Im.fromarray((gaussian_filter(canvases[1][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_y.png"))
+    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_y_ooi_{id}.png"))
 
     image_height, image_width = xray_image[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] / xray_image[0]
-    img = Im.fromarray((gaussian_filter(canvases[2][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_without_ooi_z.png"))
+    img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_z_no_ooi_{id}.png"))
 
     image_height, image_width = xray_ooi[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] * xray_ooi[0]
-    img = Im.fromarray((gaussian_filter(canvases[2][::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"sample_{id}_with_ooi_z.png"))
+    img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    img.save(os.path.join(args['image_dir'], f"image_z_ooi_{id}.png"))
 
 
 def main(args):
-    # Load the voxels
-    files = glob(
-        os.path.join(args['voxel_dir'], '*' + str(args['scale']) + '_' + str(args['rotated']).lower() + ".npy"))
-    files = [f for f in files if os.path.isfile(f)]
-    if len(files) == 0:
-        raise FileNotFoundError('No numpy (.npy) file found.')
+    # Read the filenames
+    files = [f for f in os.listdir(args['voxel_dir']) if
+             f.endswith(f"{str(args['scale'])}_{str(args['rotated']).lower()}.npy")]
 
     if args['ooi'] and not os.path.isfile(os.path.join(args['voxel_dir'], args['ooi'])):
         raise FileNotFoundError(f"Object of interest {args['ooi']} not found.")
@@ -245,9 +238,11 @@ def main(args):
 
     # TODO: Share these variables among the processes instead of passing as an argument
     # TODO: assign the variables directly to args
-    voxels = [np.load(f) for f in files]
+    # Put the ooi at the beginning
+    files.remove(args['ooi'])
+    files = [args['ooi']] + files
+    voxels = [np.load(os.path.join(args['voxel_dir'], f)) for f in files]
     materials = [get_material(f) for f in files]
-    items = [os.path.split(x)[1] for x in files]
     images = [get_image_array(v, m) for (v, m) in zip(voxels, materials)]
     # TODO: remove hardcoded 'metal'
     ooi_images = [get_image_array(np.load(os.path.join(args['voxel_dir'], args['ooi'])), 'metal'),
@@ -257,7 +252,7 @@ def main(args):
 
     args['voxels'] = [(tuple(j + 2 * args['gap'] for j in i)) for i in [v.shape for v in voxels]]
     args['materials'] = materials
-    args['items'] = items
+    args['items'] = files
     args['images'] = images
     args['ooi_images'] = ooi_images
     args['surfaces'] = [find_top_bottom_surfaces(v) for v in voxels]
@@ -267,7 +262,7 @@ def main(args):
         pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
         # Generate the images
         # TODO: remove/find better way for image indexing
-        pool.starmap(generate, zip(repeat(args), range(args['box_count'])))
+        pool.starmap(generate, zip(repeat(args), range(args['sample_count'])))
         pool.close()
     else:
         for i in range(args['box_count']):
