@@ -164,23 +164,23 @@ def generate(args, id):
 
     # TODO: avoid repetitive gaussian filtering
     # Save images with and without bounding boxes
-    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_x_{id}.png"))
-    img1 = ImageDraw.Draw(img)
-    img1.rectangle(ooi_coordinates['x'], outline="red")
-    img.save(os.path.join(args['image_dir'], f"image_x_bb_{id}.png"))
-
-    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_y_{id}.png"))
-    img1 = ImageDraw.Draw(img)
-    img1.rectangle(ooi_coordinates['y'], outline="red")
-    img.save(os.path.join(args['image_dir'], f"image_y_bb_{id}.png"))
+    # img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    # img.save(os.path.join(args['image_dir'], f"image_x_{id}.png"))
+    # img1 = ImageDraw.Draw(img)
+    # img1.rectangle(ooi_coordinates['x'], outline="red")
+    # img.save(os.path.join(args['image_dir'], f"image_x_bb_{id}.png"))
+    #
+    # img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    # img.save(os.path.join(args['image_dir'], f"image_y_{id}.png"))
+    # img1 = ImageDraw.Draw(img)
+    # img1.rectangle(ooi_coordinates['y'], outline="red")
+    # img.save(os.path.join(args['image_dir'], f"image_y_bb_{id}.png"))
 
     img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_z_{id}.png"))
+    img.save(os.path.join(args['image_dir'], f"image_{id}.png"))
     img1 = ImageDraw.Draw(img)
     img1.rectangle(ooi_coordinates['z'], outline="red")
-    img.save(os.path.join(args['image_dir'], f"image_z_bb_{id}.png"))
+    img.save(os.path.join(args['image_dir'], f"image_bb_{id}.png"))
 
     # Save image w and w/o the OOI
     xray_image, xray_ooi = args['ooi_images']
@@ -188,41 +188,41 @@ def generate(args, id):
         xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
         xray_ooi = [np.rot90(i, 2, (0, 1)) for i in xray_ooi]
 
-    image_height, image_width = xray_image[2].shape[:2]
-    canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
-                                                          x:x + image_width] / xray_image[2]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_x_no_ooi_{id}.png"))
-
-    image_height, image_width = xray_ooi[2].shape[:2]
-    canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
-                                                          x:x + image_width] * xray_ooi[2]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_x_ooi_{id}.png"))
-
-    image_height, image_width = xray_image[1].shape[:2]
-    canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
-                                                          y:y + image_width] / xray_image[1]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_y_no_ooi_{id}.png"))
-
-    image_height, image_width = xray_ooi[1].shape[:2]
-    canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
-                                                          y:y + image_width] * xray_ooi[1]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_y_ooi_{id}.png"))
+    # image_height, image_width = xray_image[2].shape[:2]
+    # canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
+    #                                                       x:x + image_width] / xray_image[2]
+    # img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    # img.save(os.path.join(args['image_dir'], f"image_x_no_ooi_{id}.png"))
+    #
+    # image_height, image_width = xray_ooi[2].shape[:2]
+    # canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
+    #                                                       x:x + image_width] * xray_ooi[2]
+    # img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    # img.save(os.path.join(args['image_dir'], f"image_x_ooi_{id}.png"))
+    #
+    # image_height, image_width = xray_image[1].shape[:2]
+    # canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
+    #                                                       y:y + image_width] / xray_image[1]
+    # img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    # img.save(os.path.join(args['image_dir'], f"image_y_no_ooi_{id}.png"))
+    #
+    # image_height, image_width = xray_ooi[1].shape[:2]
+    # canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
+    #                                                       y:y + image_width] * xray_ooi[1]
+    # img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    # img.save(os.path.join(args['image_dir'], f"image_y_ooi_{id}.png"))
 
     image_height, image_width = xray_image[0].shape[:2]
     canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                          y:y + image_width] / xray_image[0]
     img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_z_no_ooi_{id}.png"))
+    img.save(os.path.join(args['image_dir'], f"image_no_ooi_{id}.png"))
 
-    image_height, image_width = xray_ooi[0].shape[:2]
-    canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                         y:y + image_width] * xray_ooi[0]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.save(os.path.join(args['image_dir'], f"image_z_ooi_{id}.png"))
+    # image_height, image_width = xray_ooi[0].shape[:2]
+    # canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
+    #                                                      y:y + image_width] * xray_ooi[0]
+    # img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+    # img.save(os.path.join(args['image_dir'], f"image_z_ooi_{id}.png"))
 
 
 def main(args):
