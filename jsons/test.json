@@ -17,10 +17,10 @@
     "ooi": true,
     "no_ooi": false,
     "custom_ooi": false,
-    "bounding_box": false,
+    "bounding_box": true,
     "annotations": true
   },
-  "item_count": 30,
+  "item_count": 45,
   "parallel": true,
   "nproc": -1,
   "gap": 0,
