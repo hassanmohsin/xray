@@ -304,7 +304,7 @@ def main(args):
         pool.starmap(generate, zip(repeat(args), range(image_args['count'])))
         pool.close()
     else:
-        for i in range(args['box_count']):
+        for i in range(image_args['count']):
             # Generate the images
             generate(args, i)
 
