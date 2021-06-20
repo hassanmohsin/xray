@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 from PIL import ImageFilter, Image as Im
+from skimage.filters import gaussian
 from stl import Mesh
 
 from .config import decay_constant, Material
@@ -144,3 +145,16 @@ def get_image_array(voxels, material):
     depth = [np.expand_dims(voxels.sum(axis=i) / 255, axis=2) * mat_const for i in range(3)]
     img = [np.exp(-dc * d) for d in depth]
     return img
+
+
+def channel_wise_gaussian(image, sigmas):
+    """
+    Apply channel-wise gaussian filter.
+    :param image: Image
+    :param sigmas: sigma for R, G and B channel
+    :return: Image
+    """
+    return np.stack(
+        [gaussian(image[:, :, i], sigma=sigmas[i], preserve_range=True) for i in range(3)],
+        axis=2
+    )

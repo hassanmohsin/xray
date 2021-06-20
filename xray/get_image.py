@@ -8,10 +8,9 @@ from time import time
 
 import numpy as np
 from PIL import Image as Im, ImageDraw
-from scipy.ndimage import gaussian_filter
 
 from .model import Model
-from .util import get_background
+from .util import get_background, channel_wise_gaussian
 
 
 def generate(args, id):
@@ -154,7 +153,7 @@ def generate(args, id):
     image_args = args['image']
     if image_args['xview']:
         img = Im.fromarray(
-            (gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
         if image_args['ooi']:
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"ooi/xview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -168,7 +167,7 @@ def generate(args, id):
 
     if image_args['yview']:
         img = Im.fromarray(
-            (gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
         if image_args['ooi']:
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"ooi/yview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -182,7 +181,7 @@ def generate(args, id):
 
     if image_args['zview']:
         img = Im.fromarray(
-            (gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
         if image_args['ooi']:
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"ooi/zview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -204,7 +203,7 @@ def generate(args, id):
             canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                                   x:x + image_width] / ooi_model.images[2]
             img = Im.fromarray(
-                (gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"no_ooi/xview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['xview']:
@@ -212,7 +211,7 @@ def generate(args, id):
             canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                                   x:x + image_width] * ooi_model.custom_color_images[2]
             img = Im.fromarray(
-                (gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"custom_ooi/xview/{id:06d}.png"))
 
         if image_args['no_ooi'] and image_args['yview']:
@@ -220,7 +219,7 @@ def generate(args, id):
             canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                                   y:y + image_width] / ooi_model.images[1]
             img = Im.fromarray(
-                (gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"no_ooi/yview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['yview']:
@@ -228,7 +227,7 @@ def generate(args, id):
             canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                                   y:y + image_width] * ooi_model.custom_color_images[1]
             img = Im.fromarray(
-                (gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"custom_ooi/yview/{id:06d}.png"))
 
         if image_args['no_ooi'] and image_args['zview']:
@@ -236,7 +235,7 @@ def generate(args, id):
             canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                                  y:y + image_width] / ooi_model.images[0]
             img = Im.fromarray(
-                (gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"no_ooi/zview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['zview']:
@@ -244,7 +243,7 @@ def generate(args, id):
             canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                                  y:y + image_width] * ooi_model.custom_color_images[0]
             img = Im.fromarray(
-                (gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"custom_ooi/zview/{id:06d}.png"))
 
 
@@ -264,22 +263,22 @@ def main(args):
     views_dir = ['xview', 'yview', 'zview']
     if image_args['ooi']:
         for v in views_dir:
-            if args['image'][v]:
+            if args['image'][v] and not os.path.isdir(os.path.join(ooi_dir, v)):
                 os.makedirs(os.path.join(ooi_dir, v))
     if image_args['no_ooi']:
         for v in views_dir:
-            if args['image'][v]:
+            if args['image'][v] and not os.path.isdir(os.path.join(no_ooi_dir, v)):
                 os.makedirs(os.path.join(no_ooi_dir, v))
     if image_args['custom_ooi']:
         for v in views_dir:
-            if args['image'][v]:
+            if args['image'][v] and not os.path.isdir(os.path.join(custom_ooi_dir, v)):
                 os.makedirs(os.path.join(custom_ooi_dir, v))
     if image_args['bounding_box']:
         for v in views_dir:
-            if args['image'][v]:
+            if args['image'][v] and not os.path.join(bounding_box_dir, v):
                 os.makedirs(os.path.join(bounding_box_dir, v))
     for v in views_dir:
-        if args['image'][v]:
+        if args['image'][v] and not os.path.isdir(os.path.join(annotations_dir, v)):
             os.makedirs(os.path.join(annotations_dir, v))
 
     # TODO: Share these variables among the processes instead of passing as an argument

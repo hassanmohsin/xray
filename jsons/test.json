@@ -12,7 +12,7 @@
     "xview": false,
     "yview": false,
     "zview": true,
-    "count": 12,
+    "count": 4,
     "resize_factor": 0.5,
     "ooi": true,
     "no_ooi": false,
@@ -25,5 +25,5 @@
   "nproc": -1,
   "gap": 0,
   "stride": 50,
-  "sigma": [3, 2, 0]
+  "sigma": [8, 5, 1]
 }
