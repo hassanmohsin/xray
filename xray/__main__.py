@@ -1,3 +1,3 @@
-from .play import argument_parser
+from .get_image import argument_parser
 
 argument_parser()
