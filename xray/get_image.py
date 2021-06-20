@@ -263,22 +263,22 @@ def main(args):
     views_dir = ['xview', 'yview', 'zview']
     if image_args['ooi']:
         for v in views_dir:
-            if args['image'][v] and not os.path.isdir(os.path.join(ooi_dir, v)):
+            if args['image'][v]:
                 os.makedirs(os.path.join(ooi_dir, v))
     if image_args['no_ooi']:
         for v in views_dir:
-            if args['image'][v] and not os.path.isdir(os.path.join(no_ooi_dir, v)):
+            if args['image'][v]:
                 os.makedirs(os.path.join(no_ooi_dir, v))
     if image_args['custom_ooi']:
         for v in views_dir:
-            if args['image'][v] and not os.path.isdir(os.path.join(custom_ooi_dir, v)):
+            if args['image'][v]:
                 os.makedirs(os.path.join(custom_ooi_dir, v))
     if image_args['bounding_box']:
         for v in views_dir:
-            if args['image'][v] and not os.path.join(bounding_box_dir, v):
+            if args['image'][v]:
                 os.makedirs(os.path.join(bounding_box_dir, v))
     for v in views_dir:
-        if args['image'][v] and not os.path.isdir(os.path.join(annotations_dir, v)):
+        if args['image'][v]:
             os.makedirs(os.path.join(annotations_dir, v))
 
     # TODO: Share these variables among the processes instead of passing as an argument
