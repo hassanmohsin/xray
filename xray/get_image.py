@@ -141,6 +141,7 @@ def generate(args, id):
         (xmin, ymin), (xmax, ymax) = coords
         info = {
             "id": f"{id:06d}",
+            "target": args['ooi'],
             "xmin": int(xmin * args['image']['resize_factor']),
             "ymin": int(ymin * args['image']['resize_factor']),
             "xmax": int(xmax * args['image']['resize_factor']),
