@@ -4,5 +4,5 @@ import unittest
 
 # Method names should start with `test`
 class SampleTest(unittest.TestCase):
-    def test_stl_directory(self):
-        assert os.path.isdir('./stls')
+    def test_package_directory(self):
+        assert os.path.isdir('./xray')
