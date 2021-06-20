@@ -193,7 +193,7 @@ def generate(args, id):
             with open(os.path.join(image_args['dir'], f"annotations/zview/{id:06d}.json"), 'w') as f:
                 json.dump(get_info(ooi_coordinates['z']), f)
 
-    if image_args['no_ooi'] and image_args['custom_ooi']:
+    if image_args['no_ooi'] or image_args['custom_ooi']:
         if ooi_rotation:
             ooi_model.images = [np.rot90(i, 2, (0, 1)) for i in ooi_model.images]
             ooi_model.custom_color_images = [np.rot90(i, 2, (0, 1)) for i in ooi_model.custom_color_images]
@@ -277,9 +277,10 @@ def main(args):
         for v in views_dir:
             if args['image'][v]:
                 os.makedirs(os.path.join(bounding_box_dir, v))
-    for v in views_dir:
-        if args['image'][v]:
-            os.makedirs(os.path.join(annotations_dir, v))
+    if image_args['annotations']:
+        for v in views_dir:
+            if args['image'][v]:
+                os.makedirs(os.path.join(annotations_dir, v))
 
     # TODO: Share these variables among the processes instead of passing as an argument
     # TODO: assign the variables directly to args
