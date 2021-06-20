@@ -61,9 +61,9 @@ def generate(args, id):
                 np.ones((args['box_height'], args['box_width'], 3)),  # From wider side
                 np.ones((args['box_length'], args['box_width'], 3))]  # From top
 
-    image_size_x = tuple(int(t * args['image_resize_factor']) for t in canvases[0].shape[::-1][1:])
-    image_size_y = tuple(int(t * args['image_resize_factor']) for t in canvases[1].shape[::-1][1:])
-    image_size_z = tuple(int(t * args['image_resize_factor']) for t in canvases[2].shape[::-1][1:])
+    image_size_x = tuple(int(t * args['image']['resize_factor']) for t in canvases[0].shape[::-1][1:])
+    image_size_y = tuple(int(t * args['image']['resize_factor']) for t in canvases[1].shape[::-1][1:])
+    image_size_z = tuple(int(t * args['image']['resize_factor']) for t in canvases[2].shape[::-1][1:])
 
     ground = np.zeros((box_length, box_width))
     elevation = np.zeros(ground.shape, dtype=np.int32)
@@ -168,65 +168,115 @@ def generate(args, id):
 
     # TODO: avoid repetitive gaussian filtering
     # Save images with and without bounding boxes
-    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_x).save(os.path.join(args['image_dir'], f"image_x_{id}.png"))
-    img1 = ImageDraw.Draw(img)
-    img1.rectangle(ooi_coordinates['x'], outline="red")
-    img.resize(image_size_x).save(os.path.join(args['image_dir'], f"image_x_bb_{id}.png"))
 
-    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_y).save(os.path.join(args['image_dir'], f"image_y_{id}.png"))
-    img1 = ImageDraw.Draw(img)
-    img1.rectangle(ooi_coordinates['y'], outline="red")
-    img.resize(image_size_y).save(os.path.join(args['image_dir'], f"image_y_bb_{id}.png"))
+    def get_info(coords):
+        (xmin, ymin), (xmax, ymax) = coords
+        info = {
+            "id": f"{id:06d}",
+            "xmin": int(xmin * args['image']['resize_factor']),
+            "ymin": int(ymin * args['image']['resize_factor']),
+            "xmax": int(xmax * args['image']['resize_factor']),
+            "ymax": int(ymax * args['image']['resize_factor']),
+            "filename": f"{id:06d}.png"
+        }
+        return info
 
-    img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_z).save(os.path.join(args['image_dir'], f"image_z_{id}.png"))
-    img1 = ImageDraw.Draw(img)
-    img1.rectangle(ooi_coordinates['z'], outline="red")
-    img.resize(image_size_z).save(os.path.join(args['image_dir'], f"image_z_bb_{id}.png"))
+    image_args = args['image']
+    if image_args['xview']:
+        img = Im.fromarray(
+            (gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+        if image_args['ooi']:
+            img.resize(image_size_x).save(os.path.join(image_args['dir'], f"ooi/xview/{id:06d}.png"))
+        if image_args['bounding_box']:
+            img1 = ImageDraw.Draw(img)
+            img1.rectangle(ooi_coordinates['x'], outline="red")
+            img.resize(image_size_x).save(os.path.join(image_args['dir'], f"bounding_box/xview/{id:06d}.png"))
 
-    # Save image w and w/o the OOI
-    xray_image, xray_ooi = args['ooi_images']
-    if ooi_rotation:
-        xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
-        xray_ooi = [np.rot90(i, 2, (0, 1)) for i in xray_ooi]
+        if image_args['annotations']:
+            with open(os.path.join(image_args['dir'], f"annotations/xview/{id:06d}.json"), 'w') as f:
+                json.dump(get_info(ooi_coordinates['x']), f)
 
-    image_height, image_width = xray_image[2].shape[:2]
-    canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
-                                                          x:x + image_width] / xray_image[2]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_x).save(os.path.join(args['image_dir'], f"image_x_no_ooi_{id}.png"))
+    if image_args['yview']:
+        img = Im.fromarray(
+            (gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+        if image_args['ooi']:
+            img.resize(image_size_y).save(os.path.join(image_args['dir'], f"ooi/yview/{id:06d}.png"))
+        if image_args['bounding_box']:
+            img1 = ImageDraw.Draw(img)
+            img1.rectangle(ooi_coordinates['y'], outline="red")
+            img.resize(image_size_y).save(os.path.join(image_args['dir'], f"bounding_box/yview/{id:06d}.png"))
 
-    image_height, image_width = xray_ooi[2].shape[:2]
-    canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
-                                                          x:x + image_width] * xray_ooi[2]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_x).save(os.path.join(args['image_dir'], f"image_x_ooi_{id}.png"))
+        if image_args['annotations']:
+            with open(os.path.join(image_args['dir'], f"annotations/yview/{id:06d}.json"), 'w') as f:
+                json.dump(get_info(ooi_coordinates['y']), f)
 
-    image_height, image_width = xray_image[1].shape[:2]
-    canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
-                                                          y:y + image_width] / xray_image[1]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_y).save(os.path.join(args['image_dir'], f"image_y_no_ooi_{id}.png"))
+    if image_args['zview']:
+        img = Im.fromarray(
+            (gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+        if image_args['ooi']:
+            img.resize(image_size_z).save(os.path.join(image_args['dir'], f"ooi/zview/{id:06d}.png"))
+        if image_args['bounding_box']:
+            img1 = ImageDraw.Draw(img)
+            img1.rectangle(ooi_coordinates['z'], outline="red")
+            img.resize(image_size_z).save(os.path.join(image_args['dir'], f"bounding_box/zview/{id:06d}.png"))
 
-    image_height, image_width = xray_ooi[1].shape[:2]
-    canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
-                                                          y:y + image_width] * xray_ooi[1]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_y).save(os.path.join(args['image_dir'], f"image_y_ooi_{id}.png"))
+        if image_args['annotations']:
+            with open(os.path.join(image_args['dir'], f"annotations/zview/{id:06d}.json"), 'w') as f:
+                json.dump(get_info(ooi_coordinates['z']), f)
 
-    image_height, image_width = xray_image[0].shape[:2]
-    canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                         y:y + image_width] / xray_image[0]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_z).save(os.path.join(args['image_dir'], f"image_z_no_ooi_{id}.png"))
+    if image_args['no_ooi'] and image_args['custom_ooi']:
+        xray_image, xray_ooi = args['ooi_images']
+        if ooi_rotation:
+            xray_image = [np.rot90(i, 2, (0, 1)) for i in xray_image]
+            xray_ooi = [np.rot90(i, 2, (0, 1)) for i in xray_ooi]
 
-    image_height, image_width = xray_ooi[0].shape[:2]
-    canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                         y:y + image_width] * xray_ooi[0]
-    img = Im.fromarray((gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
-    img.resize(image_size_z).save(os.path.join(args['image_dir'], f"image_z_ooi_{id}.png"))
+        if image_args['no_ooi'] and image_args['xview']:
+            image_height, image_width = xray_image[2].shape[:2]
+            canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
+                                                                  x:x + image_width] / xray_image[2]
+            img = Im.fromarray(
+                (gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            img.resize(image_size_x).save(os.path.join(image_args['dir'], f"no_ooi/xview/{id:06d}.png"))
+
+        if image_args['custom_ooi'] and image_args['xview']:
+            image_height, image_width = xray_ooi[2].shape[:2]
+            canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
+                                                                  x:x + image_width] * xray_ooi[2]
+            img = Im.fromarray(
+                (gaussian_filter(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            img.resize(image_size_x).save(os.path.join(image_args['dir'], f"custom_ooi/xview/{id:06d}.png"))
+
+        if image_args['no_ooi'] and image_args['yview']:
+            image_height, image_width = xray_image[1].shape[:2]
+            canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
+                                                                  y:y + image_width] / xray_image[1]
+            img = Im.fromarray(
+                (gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            img.resize(image_size_y).save(os.path.join(image_args['dir'], f"no_ooi/yview/{id:06d}.png"))
+
+        if image_args['custom_ooi'] and image_args['yview']:
+            image_height, image_width = xray_ooi[1].shape[:2]
+            canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
+                                                                  y:y + image_width] * xray_ooi[1]
+            img = Im.fromarray(
+                (gaussian_filter(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            img.resize(image_size_y).save(os.path.join(image_args['dir'], f"custom_ooi/yview/{id:06d}.png"))
+
+        if image_args['no_ooi'] and image_args['zview']:
+            image_height, image_width = xray_image[0].shape[:2]
+            canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
+                                                                 y:y + image_width] / xray_image[0]
+            img = Im.fromarray(
+                (gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            img.resize(image_size_z).save(os.path.join(image_args['dir'], f"no_ooi/zview/{id:06d}.png"))
+
+        if image_args['custom_ooi'] and image_args['zview']:
+            image_height, image_width = xray_ooi[0].shape[:2]
+            canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
+                                                                 y:y + image_width] * xray_ooi[0]
+            img = Im.fromarray(
+                (gaussian_filter(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            img.resize(image_size_z).save(os.path.join(image_args['dir'], f"custom_ooi/zview/{id:06d}.png"))
 
 
 def main(args):
@@ -237,8 +287,44 @@ def main(args):
     if args['ooi'] and not os.path.isfile(os.path.join(args['voxel_dir'], args['ooi'])):
         raise FileNotFoundError(f"Object of interest {args['ooi']} not found.")
 
-    if not os.path.isdir(args['image_dir']):
-        os.makedirs(args['image_dir'])
+    # crate directories
+    image_args = args['image']
+    if not (image_args['ooi'] or image_args['no_ooi'] or image_args['custom_ooi'] or image_args['bounding_box']):
+        print("ERROR: Specify at least one of the image output criteria.")
+        return
+
+    dataset_dir = os.path.join(image_args['dir'])
+    ooi_dir = os.path.join(dataset_dir, 'ooi')
+    no_ooi_dir = os.path.join(dataset_dir, 'no_ooi')
+    custom_ooi_dir = os.path.join(dataset_dir, 'custom_ooi')
+    bounding_box_dir = os.path.join(dataset_dir, 'bounding_box')
+    annotations_dir = os.path.join(dataset_dir, 'annotations')
+    views_dir = ['xview', 'yview', 'zview']
+    if image_args['ooi'] and not os.path.isdir(ooi_dir):
+        os.makedirs(ooi_dir)
+        for v in views_dir:
+            if args['image'][v]:
+                os.makedirs(os.path.join(ooi_dir, v))
+    if image_args['no_ooi'] and not os.path.isdir(no_ooi_dir):
+        os.makedirs(no_ooi_dir)
+        for v in views_dir:
+            if args['image'][v]:
+                os.makedirs(os.path.join(no_ooi_dir, v))
+    if image_args['custom_ooi'] and not os.path.isdir(custom_ooi_dir):
+        os.makedirs(custom_ooi_dir)
+        for v in views_dir:
+            if args['image'][v]:
+                os.makedirs(os.path.join(custom_ooi_dir, v))
+    if image_args['bounding_box'] and not os.path.isdir(bounding_box_dir):
+        os.makedirs(bounding_box_dir)
+        for v in views_dir:
+            if args['image'][v]:
+                os.makedirs(os.path.join(bounding_box_dir, v))
+    if not os.path.isdir(annotations_dir):
+        os.makedirs(annotations_dir)
+        for v in views_dir:
+            if args['image'][v]:
+                os.makedirs(os.path.join(annotations_dir, v))
 
     # TODO: Share these variables among the processes instead of passing as an argument
     # TODO: assign the variables directly to args
@@ -266,7 +352,7 @@ def main(args):
         pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
         # Generate the images
         # TODO: remove/find better way for image indexing
-        pool.starmap(generate, zip(repeat(args), range(args['sample_count'])))
+        pool.starmap(generate, zip(repeat(args), range(args['image']['count'])))
         pool.close()
     else:
         for i in range(args['box_count']):
