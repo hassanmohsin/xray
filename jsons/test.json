@@ -1,7 +1,7 @@
 {
   "stl_dir": "./stls",
   "voxel_dir": "./voxels",
-  "ooi": "pick-x_metal_2.0_true.npy",
+  "ooi": "pick-x",
   "scale": 2.0,
   "rotated": true,
   "box_length": 1000,
@@ -12,7 +12,7 @@
     "xview": false,
     "yview": false,
     "zview": true,
-    "count": 4,
+    "count": 12,
     "resize_factor": 0.5,
     "ooi": true,
     "no_ooi": false,

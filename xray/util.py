@@ -10,6 +10,40 @@ from .perimeter import lines_to_voxels
 from .slice import to_intersecting_lines
 
 
+def get_material(s):
+    mat = Material()
+    for const in mat.material_constant.keys():
+        if const in s:
+            return const
+
+    return ''
+
+
+def find_top_bottom_surfaces(voxels):
+    # Find the heights of the top and bottom surface for each pixel
+    bottom_surface = np.zeros(voxels.shape[1:], dtype=np.int32)  # height of the bottom surface
+    ceiling = np.zeros_like(bottom_surface).astype(np.bool)
+    top_surface = bottom_surface.copy()  # height of the bottom surface
+    floor = ceiling.copy()
+
+    # TODO: Merge the loops below (Track the height)
+    # At each height
+    for h in range(voxels.shape[0]):
+        # check if it has reached the bottom surface
+        ceiling = ceiling | voxels[h]
+        # increase the height by 1 if it is not bottom surface and the pixel is not occupied
+        bottom_surface[~voxels[h] & ~ceiling] += 1
+    # Remove the columns that doesn't contain any part of the object
+    bottom_surface[~ceiling] = 0
+
+    for h in range(voxels.shape[0] - 1, -1, -1):
+        floor = floor | voxels[h]
+        top_surface[~voxels[h] & ~floor] += 1
+    top_surface[~floor] = 0
+
+    return [top_surface, bottom_surface]
+
+
 def dir_path(string):
     if os.path.isdir(string):
         return string
@@ -26,11 +60,6 @@ def pad_voxel_array(voxels):
             for c in range(shape[2]):
                 vol[a + 1, b + 1, c + 1] = voxels[a, b, c]
     return vol, (new_shape[1], new_shape[2], new_shape[0])
-
-
-def get_material(stl_file):
-    object_name, ext = os.path.splitext(stl_file)
-    return object_name.split('_')[-1]
 
 
 def read_stl(input_file):
