@@ -26,7 +26,7 @@ def stl_to_voxel(stl_file, args):
         xrot = np.random.normal(0., 5.0)
         yrot = np.random.normal(0., 5.0)
         zrot = np.random.choice([0, 90, 180, 270]) + np.random.normal(0., 5.0)
-        print(f"{stl_file} is rotated by ({xrot}, {yrot}, {zrot})")
+        print(f"{stl_file} is rotated by ({xrot:.3f}, {yrot:.3f}, {zrot:.3f})")
         rot_mat = np.matmul(
             mesh.rotation_matrix([1, 0, 0], math.radians(xrot)),
             np.matmul(

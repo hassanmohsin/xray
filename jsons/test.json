@@ -1,18 +1,29 @@
 {
   "stl_dir": "./stls",
   "voxel_dir": "./voxels",
-  "dataset_dir":  "./dataset",
-  "ooi": "pick-x_metal_2.0_true.npy",
+  "ooi": "pick-x",
   "scale": 2.0,
   "rotated": true,
-  "length": 1000,
-  "width": 1000,
-  "height": 500,
-  "sample_count": 4,
-  "item_count": 30,
+  "box_length": 1000,
+  "box_width": 1000,
+  "box_height": 500,
+  "image": {
+    "dir": "./dataset",
+    "xview": false,
+    "yview": false,
+    "zview": true,
+    "count": 4,
+    "resize_factor": 0.5,
+    "ooi": true,
+    "no_ooi": false,
+    "custom_ooi": false,
+    "bounding_box": true,
+    "annotations": true
+  },
+  "item_count": 45,
   "parallel": true,
   "nproc": -1,
   "gap": 0,
   "stride": 50,
-  "sigma": [3, 2, 0]
+  "sigma": [8, 5, 1]
 }

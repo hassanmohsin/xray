@@ -3,11 +3,46 @@ import os
 
 import numpy as np
 from PIL import ImageFilter, Image as Im
+from skimage.filters import gaussian
 from stl import Mesh
 
 from .config import decay_constant, Material
 from .perimeter import lines_to_voxels
 from .slice import to_intersecting_lines
+
+
+def get_material(s):
+    mat = Material()
+    for const in mat.material_constant.keys():
+        if const in s:
+            return const
+
+    return ''
+
+
+def find_top_bottom_surfaces(voxels):
+    # Find the heights of the top and bottom surface for each pixel
+    bottom_surface = np.zeros(voxels.shape[1:], dtype=np.int32)  # height of the bottom surface
+    ceiling = np.zeros_like(bottom_surface).astype(np.bool)
+    top_surface = bottom_surface.copy()  # height of the bottom surface
+    floor = ceiling.copy()
+
+    # TODO: Merge the loops below (Track the height)
+    # At each height
+    for h in range(voxels.shape[0]):
+        # check if it has reached the bottom surface
+        ceiling = ceiling | voxels[h]
+        # increase the height by 1 if it is not bottom surface and the pixel is not occupied
+        bottom_surface[~voxels[h] & ~ceiling] += 1
+    # Remove the columns that doesn't contain any part of the object
+    bottom_surface[~ceiling] = 0
+
+    for h in range(voxels.shape[0] - 1, -1, -1):
+        floor = floor | voxels[h]
+        top_surface[~voxels[h] & ~floor] += 1
+    top_surface[~floor] = 0
+
+    return [top_surface, bottom_surface]
 
 
 def dir_path(string):
@@ -26,11 +61,6 @@ def pad_voxel_array(voxels):
             for c in range(shape[2]):
                 vol[a + 1, b + 1, c + 1] = voxels[a, b, c]
     return vol, (new_shape[1], new_shape[2], new_shape[0])
-
-
-def get_material(stl_file):
-    object_name, ext = os.path.splitext(stl_file)
-    return object_name.split('_')[-1]
 
 
 def read_stl(input_file):
@@ -115,3 +145,16 @@ def get_image_array(voxels, material):
     depth = [np.expand_dims(voxels.sum(axis=i) / 255, axis=2) * mat_const for i in range(3)]
     img = [np.exp(-dc * d) for d in depth]
     return img
+
+
+def channel_wise_gaussian(image, sigmas):
+    """
+    Apply channel-wise gaussian filter.
+    :param image: Image
+    :param sigmas: sigma for R, G and B channel
+    :return: Image
+    """
+    return np.stack(
+        [gaussian(image[:, :, i], sigma=sigmas[i], preserve_range=True) for i in range(3)],
+        axis=2
+    )
