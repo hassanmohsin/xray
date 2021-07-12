@@ -25,9 +25,11 @@ def generate(args, id):
     box_width = args['box_width'] + 2 * args['gap']
 
     # Xray images along 3 different axes (x, y, z)
-    canvases = [np.ones((args['box_height'], args['box_length'], 3)),  # From longer side
-                np.ones((args['box_height'], args['box_width'], 3)),  # From wider side
-                np.ones((args['box_length'], args['box_width'], 3))]  # From top
+    canvases = [
+        np.ones((args['box_height'], args['box_length'], 3)),  # From longer side
+        np.ones((args['box_height'], args['box_width'], 3)),  # From wider side
+        np.ones((args['box_length'], args['box_width'], 3))  # From top
+    ]
 
     image_size_x = tuple(int(t * args['image']['resize_factor']) for t in canvases[0].shape[::-1][1:])
     image_size_y = tuple(int(t * args['image']['resize_factor']) for t in canvases[1].shape[::-1][1:])
@@ -95,29 +97,37 @@ def generate(args, id):
         image_height, image_width = xray_image[2].shape[:2]
         canvases[0][z: z + image_height, x:x + image_width] = canvases[0][
                                                               z: z + image_height,
-                                                              x:x + image_width] * \
-                                                              xray_image[2]
+                                                              x:x + image_width
+                                                              ] * xray_image[2]
 
         if models[ind].ooi:
-            ooi_coordinates['x'] = [(x, canvases[0].shape[0] - (z + image_height)),
-                                    (x + image_width, canvases[0].shape[0] - z)]
+            ooi_coordinates['x'] = [
+                (x, canvases[0].shape[0] - (z + image_height)),
+                (x + image_width, canvases[0].shape[0] - z)
+            ]
 
         # View from wider side
         image_height, image_width = xray_image[1].shape[:2]
         canvases[1][z: z + image_height, y:y + image_width] = canvases[1][
                                                               z: z + image_height,
-                                                              y:y + image_width] * \
-                                                              xray_image[1]
+                                                              y:y + image_width
+                                                              ] * xray_image[1]
         if models[ind].ooi:
-            ooi_coordinates['y'] = [(y, canvases[1].shape[0] - (z + image_height)),
-                                    (y + image_width, canvases[1].shape[0] - z)]
+            ooi_coordinates['y'] = [
+                (y, canvases[1].shape[0] - (z + image_height)),
+                (y + image_width, canvases[1].shape[0] - z)
+            ]
         # View from top
         image_height, image_width = xray_image[0].shape[:2]
-        canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                             y:y + image_width] * xray_image[0]
+        canvases[2][x:x + image_height, y:y + image_width] = canvases[2][
+                                                             x:x + image_height,
+                                                             y:y + image_width
+                                                             ] * xray_image[0]
         if models[ind].ooi:
-            ooi_coordinates['z'] = [(y, canvases[2].shape[0] - (x + image_height)),
-                                    (y + image_width, canvases[2].shape[0] - x)]
+            ooi_coordinates['z'] = [
+                (y, canvases[2].shape[0] - (x + image_height)),
+                (y + image_width, canvases[2].shape[0] - x)
+            ]
 
         if models[ind].ooi:
             ooi = [x, y, z]
@@ -153,7 +163,13 @@ def generate(args, id):
     image_args = args['image']
     if image_args['xview']:
         img = Im.fromarray(
-            (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (
+                    channel_wise_gaussian(
+                        image=get_background(canvases[0])[::-1, :, :],
+                        sigmas=args['sigma']
+                    ) * 255
+            ).astype('uint8')
+        )
         if image_args['ooi']:
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"ooi/xview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -167,7 +183,13 @@ def generate(args, id):
 
     if image_args['yview']:
         img = Im.fromarray(
-            (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (
+                    channel_wise_gaussian(
+                        image=get_background(canvases[1])[::-1, :, :],
+                        sigmas=args['sigma']
+                    ) * 255
+            ).astype('uint8')
+        )
         if image_args['ooi']:
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"ooi/yview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -181,7 +203,13 @@ def generate(args, id):
 
     if image_args['zview']:
         img = Im.fromarray(
-            (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (
+                    channel_wise_gaussian(
+                        image=get_background(canvases[2])[::-1, :, :],
+                        sigmas=args['sigma']
+                    ) * 255
+            ).astype('uint8')
+        )
         if image_args['ooi']:
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"ooi/zview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -203,7 +231,13 @@ def generate(args, id):
             canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                                   x:x + image_width] / ooi_model.images[2]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[0])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"no_ooi/xview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['xview']:
@@ -211,7 +245,13 @@ def generate(args, id):
             canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                                   x:x + image_width] * ooi_model.custom_color_images[2]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[0])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"custom_ooi/xview/{id:06d}.png"))
 
         if image_args['no_ooi'] and image_args['yview']:
@@ -219,7 +259,13 @@ def generate(args, id):
             canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                                   y:y + image_width] / ooi_model.images[1]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[1])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"no_ooi/yview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['yview']:
@@ -227,7 +273,13 @@ def generate(args, id):
             canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                                   y:y + image_width] * ooi_model.custom_color_images[1]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[1])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"custom_ooi/yview/{id:06d}.png"))
 
         if image_args['no_ooi'] and image_args['zview']:
@@ -235,7 +287,13 @@ def generate(args, id):
             canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                                  y:y + image_width] / ooi_model.images[0]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[2])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"no_ooi/zview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['zview']:
@@ -243,7 +301,13 @@ def generate(args, id):
             canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                                  y:y + image_width] * ooi_model.custom_color_images[0]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[2])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"custom_ooi/zview/{id:06d}.png"))
 
 
