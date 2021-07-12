@@ -13,7 +13,7 @@ from .slice import to_intersecting_lines
 
 def get_material(s):
     mat = Material()
-    for const in mat.material_constant.keys():
+    for const in mat._material_constant.keys():
         if const in s:
             return const
 
@@ -122,18 +122,21 @@ def get_background(img):
     dot_count = 30000
     orange = [255., 165., 0.]
     # orange = np.array([216, 156, 22]) # Sixray
-    bg = np.ones(img.shape) * 255.
-    xs, ys = np.random.choice(range(2, height - 2), dot_count), np.random.choice(range(2, length - 2), dot_count)
+    mask = img == (1., 1., 1.)
+    xs = np.random.choice(range(2, height - 2), dot_count)
+    ys = np.random.choice(range(2, length - 2), dot_count)
 
+    bg = np.ones(img.shape) * 255.
     bg[xs, ys] = orange
     bg[xs - 1, ys - 1] = orange
     bg[xs + 1, ys + 1] = orange
 
-    bg = Im.fromarray(bg.astype(np.uint8))
-    bg = bg.filter(ImageFilter.GaussianBlur(radius=5))
-    bg = np.array(bg)
-    mask = img == (1., 1., 1.)
-    img[mask] = bg[mask] / 255.
+    img[mask] = np.array(
+        Im.fromarray(
+            bg.astype(np.uint8)
+        ).filter(ImageFilter.GaussianBlur(radius=5))
+    )[mask] / 255.
+
     return img
 
 
@@ -141,7 +144,7 @@ def get_image_array(voxels, material):
     # TODO: remove hardcoded increment of decay_constant, add it to the config
     dc = decay_constant + 10 if material == 'metal' else decay_constant
     mat = Material()
-    mat_const = mat.get_const(material)
+    mat_const = mat.get_const(material, color_deviation=material == 'metal')
     depth = [np.expand_dims(voxels.sum(axis=i) / 255, axis=2) * mat_const for i in range(3)]
     img = [np.exp(-dc * d) for d in depth]
     return img
