@@ -4,6 +4,7 @@ import os
 import random
 from argparse import ArgumentParser
 from itertools import repeat
+from pathlib import Path
 from time import time
 
 import numpy as np
@@ -328,23 +329,23 @@ def main(args):
     if image_args['ooi']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(ooi_dir, v))
+                Path(os.path.join(ooi_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['no_ooi']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(no_ooi_dir, v))
+                Path(os.path.join(no_ooi_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['custom_ooi']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(custom_ooi_dir, v))
+                Path(os.path.join(custom_ooi_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['bounding_box']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(bounding_box_dir, v))
+                Path(os.path.join(bounding_box_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['annotations']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(annotations_dir, v))
+                Path(os.path.join(annotations_dir, v)).mkdir(parents=True, exist_ok=True)
 
     # TODO: Share these variables among the processes instead of passing as an argument
     # TODO: assign the variables directly to args
