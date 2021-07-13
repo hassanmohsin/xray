@@ -32,9 +32,8 @@ def get_voxel_file(args, stl_file):
 
 def generate(args, id):
     # Randomly choose one of the ooi model
-    models = [np.random.choice(m) for m in args['models']]
-    ooi_model = random.choice([m for m in models if m.ooi])
-    other_models = random.sample([m for m in models if not m.ooi], args['item_count'] - 1)
+    ooi_model = random.choice([m for m in args['models'] if m.ooi])
+    other_models = random.sample([m for m in args['models'] if not m.ooi], args['item_count'] - 1)
     models = [ooi_model] + other_models
     random.shuffle(models)
 
@@ -383,18 +382,24 @@ def main(args):
                 desc="Loading the models"
             )
         )
-        # TODO: Put a sanity check if all the voxels in the same group are from the same stl file
-        args['models'] = [
+        # TODO: Put a sanity check to make sure all the voxels in the same group are from the same stl file
+        model_groups = [
             models[i:i + len(args['z_rotations'])] for i in range(
                 0,
                 len(voxel_files_1d),
                 len(args['z_rotations']))
         ]
+
+        # sample one model from each model group and put it in the argument
+        arg_groups = [args for _ in range(image_args['count'])]
+        for i, model_group in enumerate(range(image_args['count'])):
+            arg_groups[i]['models'] = [np.random.choice(m) for m in model_groups]
+
         # Generate images
         # TODO: remove/find better way for image indexing
         pool.starmap(
             generate,
-            tqdm(zip(repeat(args), range(image_args['count'])), total=image_args['count'], desc="Generating images")
+            tqdm(zip(arg_groups, range(image_args['count'])), total=image_args['count'], desc="Generating images")
         )
         pool.close()
     else:
