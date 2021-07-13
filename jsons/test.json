@@ -4,6 +4,7 @@
   "ooi": "pick-x",
   "scale": 2.0,
   "rotated": true,
+  "z_rotations": [0, 15, 30, 45, 60, 75],
   "box_length": 1000,
   "box_width": 1000,
   "box_height": 500,
@@ -12,18 +13,18 @@
     "xview": false,
     "yview": false,
     "zview": true,
-    "count": 4,
-    "resize_factor": 0.5,
-    "ooi": true,
+    "count": 12,
+    "resize_factor": 1,
+    "ooi": false,
     "no_ooi": false,
     "custom_ooi": false,
     "bounding_box": true,
-    "annotations": true
+    "annotations": false
   },
-  "item_count": 45,
+  "item_count": 60,
   "parallel": true,
   "nproc": -1,
   "gap": 0,
-  "stride": 50,
+  "stride": 100,
   "sigma": [8, 5, 1]
 }

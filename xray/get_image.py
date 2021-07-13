@@ -9,15 +9,32 @@ from time import time
 
 import numpy as np
 from PIL import Image as Im, ImageDraw
+from tqdm import tqdm
 
 from .model import Model
 from .util import get_background, channel_wise_gaussian
 
 
+def get_voxel_file(args, stl_file):
+    voxel_files = [
+        os.path.join(
+            args['voxel_dir'],
+            f"{stl_file}_{args['scale']}_{str(args['rotated']).lower()}_{z_rotation}.npy"
+        ) for z_rotation in args['z_rotations']
+    ]
+
+    for voxel_file in voxel_files:
+        if not os.path.isfile(voxel_file):
+            raise FileNotFoundError(f"{voxel_file} not found")
+
+    return voxel_files
+
+
 def generate(args, id):
     # Randomly choose one of the ooi model
-    ooi_model = random.choice([m for m in args['models'] if m.ooi])
-    other_models = random.sample([m for m in args['models'] if not m.ooi], args['item_count'] - 1)
+    models = [np.random.choice(m) for m in args['models']]
+    ooi_model = random.choice([m for m in models if m.ooi])
+    other_models = random.sample([m for m in models if not m.ooi], args['item_count'] - 1)
     models = [ooi_model] + other_models
     random.shuffle(models)
 
@@ -48,7 +65,7 @@ def generate(args, id):
     rotations = np.random.randint(2, size=len(models))
     ooi_rotation = False
 
-    print(f"BOX {id + 1}: Packing objects...")
+    # print(f"BOX {id + 1}: Packing objects...")
     # Find the object positions
     # Place 4 objects in 4 corners
     # TODO: update `ground` and `elevation` for the following four placement
@@ -140,10 +157,10 @@ def generate(args, id):
         x, y, z = ooi
     else:
         # TODO: Force packing the ooi into the box
-        print(f"BOX {id + 1}: The object of interest wasn't packed, no image was generated, exiting...")
+        # print(f"BOX {id + 1}: The object of interest wasn't packed, no image was generated, exiting...")
         return
 
-    print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
+    # print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
 
     # TODO: avoid repetitive gaussian filtering
     # Save images with and without bounding boxes
@@ -350,23 +367,47 @@ def main(args):
     # TODO: Share these variables among the processes instead of passing as an argument
     # TODO: assign the variables directly to args
 
-    # Read the filenames
-    files = [f for f in os.listdir(args['voxel_dir']) if
-             f.endswith(f"{str(args['scale'])}_{str(args['rotated']).lower()}.npy")]
-
-    args['models'] = [Model(args, f, args['ooi'] in f) for f in files]
-    assert any([m.ooi for m in args['models']]), "No voxel file for the object of interest is found."
+    # Read the files
+    stls = [os.path.splitext(f)[0] for f in
+            [ff for ff in os.listdir(args['stl_dir']) if os.path.isfile(os.path.join(args['stl_dir'], ff))]]
+    voxel_files = [get_voxel_file(args, s) for s in stls]
+    voxel_files_1d = [j for k in voxel_files for j in k]
 
     if args['parallel']:
         pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
-        # Generate the images
+        models = pool.starmap(
+            Model,
+            tqdm(
+                zip(repeat(args), voxel_files_1d, [args['ooi'] in f for f in voxel_files_1d]),
+                total=len(voxel_files_1d),
+                desc="Loading the models"
+            )
+        )
+        # TODO: Put a sanity check if all the voxels in the same group are from the same stl file
+        args['models'] = [
+            models[i:i + len(args['z_rotations'])] for i in range(
+                0,
+                len(voxel_files_1d),
+                len(args['z_rotations']))
+        ]
+        # Generate images
         # TODO: remove/find better way for image indexing
-        pool.starmap(generate, zip(repeat(args), range(image_args['count'])))
+        pool.starmap(
+            generate,
+            tqdm(zip(repeat(args), range(image_args['count'])), total=image_args['count'], desc="Generating images")
+        )
         pool.close()
     else:
-        for i in range(image_args['count']):
-            # Generate the images
-            generate(args, i)
+        # TODO: Implement this!
+        raise NotImplementedError("Not implemented yet")
+        # Load the models
+        # models = []
+        # for f in tqdm(files, desc="Loading the models"):
+        #     models.append(Model(args, f, args['ooi'] in f))
+        # args['models'] = models
+        # # Generate the images
+        # for i in tqdm(range(image_args['count']), desc="Generating images"):
+        #     generate(args, i)
 
 
 def argument_parser():

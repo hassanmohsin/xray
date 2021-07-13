@@ -9,7 +9,7 @@ class Model:
     def __init__(self, args, filename, ooi=False):
         self.filename = filename
         self.ooi = ooi
-        self.voxels = np.load(os.path.join(args['voxel_dir'], self.filename))
+        self.voxels = np.load(self.filename)
         self.material = get_material(self.filename)
         self.images = get_image_array(self.voxels, self.material)
         self.custom_color_images = get_image_array(self.voxels, 'ooi') if ooi else None
