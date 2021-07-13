@@ -3,20 +3,20 @@ import math
 import multiprocessing as mp
 import os
 from argparse import ArgumentParser
-from functools import partial
 from glob import glob
+from itertools import product
 from time import time
 
 import numpy as np
-from p_tqdm import p_map
+from tqdm import tqdm
 
 from xray.util import read_stl, get_voxels, crop_model
 
 
-def stl_to_voxel(stl_file, args):
+def stl_to_voxel(stl_file, args, zrot):
     voxel_file = os.path.join(
         os.path.join(args['voxel_dir'],
-                     f"{os.path.split(stl_file)[1][:-4]}_{args['scale']}_{str(args['rotated']).lower()}"))
+                     f"{os.path.split(stl_file)[1][:-4]}_{args['scale']}_{str(args['rotated']).lower()}_{zrot}"))
 
     if os.path.isfile(voxel_file + ".npy"):
         return
@@ -25,8 +25,8 @@ def stl_to_voxel(stl_file, args):
     if args['rotated']:
         xrot = np.random.normal(0., 5.0)
         yrot = np.random.normal(0., 5.0)
-        zrot = np.random.choice([0, 90, 180, 270]) + np.random.normal(0., 5.0)
-        print(f"{stl_file} is rotated by ({xrot:.3f}, {yrot:.3f}, {zrot:.3f})")
+        zrot = np.random.choice([0, 90, 180, 270]) + zrot
+        # print(f"{stl_file} is rotated by ({xrot:.3f}, {yrot:.3f}, {zrot:.3f})")
         rot_mat = np.matmul(
             mesh.rotation_matrix([1, 0, 0], math.radians(xrot)),
             np.matmul(
@@ -67,10 +67,11 @@ if __name__ == '__main__':
     if not os.path.isdir(args['voxel_dir']):
         os.makedirs(args['voxel_dir'])
 
-    print("LOG: Converting .stl files...")
+    # print("LOG: Converting .stl files...")
+    arg_list = [(s,) + (args,) + (z,) for (s, z) in product(stl_files, args['z_rotations'])]
     pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
-    p_map(partial(stl_to_voxel, args=args), stl_files)
+    pool.starmap(stl_to_voxel, tqdm(arg_list, total=len(arg_list), desc="Converting .stl files into voxels"))
     pool.close()
-    print(f"Voxels files saved to {args['voxel_dir']}")
+    print(f"Voxel files saved to {args['voxel_dir']}")
     toc = time() - tic
-    print(f"Execution time: {toc} seconds.")
+    print(f"Execution time: {toc:.3f} seconds.")
