@@ -9,6 +9,7 @@ from time import time
 
 import numpy as np
 from PIL import Image as Im, ImageDraw
+from tqdm import tqdm
 
 from .model import Model
 from .util import get_background, channel_wise_gaussian
@@ -48,7 +49,7 @@ def generate(args, id):
     rotations = np.random.randint(2, size=len(models))
     ooi_rotation = False
 
-    print(f"BOX {id + 1}: Packing objects...")
+    # print(f"BOX {id + 1}: Packing objects...")
     # Find the object positions
     # Place 4 objects in 4 corners
     # TODO: update `ground` and `elevation` for the following four placement
@@ -140,10 +141,10 @@ def generate(args, id):
         x, y, z = ooi
     else:
         # TODO: Force packing the ooi into the box
-        print(f"BOX {id + 1}: The object of interest wasn't packed, no image was generated, exiting...")
+        # print(f"BOX {id + 1}: The object of interest wasn't packed, no image was generated, exiting...")
         return
 
-    print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
+    # print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
 
     # TODO: avoid repetitive gaussian filtering
     # Save images with and without bounding boxes
@@ -359,9 +360,17 @@ def main(args):
 
     if args['parallel']:
         pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
+        args['models'] = pool.starmap(
+            Model,
+            tqdm(zip(repeat(args), files, [args['ooi'] in f for f in files]), total=len(files),
+                 desc="Loading the models")
+        )
         # Generate the images
         # TODO: remove/find better way for image indexing
-        pool.starmap(generate, zip(repeat(args), range(image_args['count'])))
+        pool.starmap(
+            generate,
+            tqdm(zip(repeat(args), range(image_args['count'])), total=image_args['count'], desc="Generating Images")
+        )
         pool.close()
     else:
         for i in range(image_args['count']):
@@ -371,8 +380,7 @@ def main(args):
 
 def argument_parser():
     parser = ArgumentParser(description='Convert 3D models to false-color xray images')
-    parser.add_argument('--input', type=str, required=True, action='store',
-                        help="JSON input")
+    parser.add_argument('--input', type=str, required=True, action='store', help="JSON input")
     args = parser.parse_args()
     if not os.path.isfile(args.input):
         raise FileNotFoundError("Input {args.input} not found.")
