@@ -1,10 +1,13 @@
 import json
+import multiprocessing as mp
 import os
+from itertools import repeat
 from pathlib import Path
 from time import time
 
 import numpy as np
 from PIL import Image as Im
+from tqdm import tqdm
 
 from xray.model import Model
 from xray.util import get_background, channel_wise_gaussian
@@ -203,26 +206,25 @@ def main(args):
     files = [f for f in files if f.endswith(f"{str(args['scale'])}_{str(args['rotated']).lower()}.npy")]
 
     args['models'] = [Model(args, f) for f in files]
-    generate(args, 0)
 
-    # if args['parallel']:
-    #     pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
-    #     args['models'] = pool.starmap(
-    #         Model,
-    #         tqdm(zip(repeat(args), files, [args['ooi'] in f for f in files]), total=len(files),
-    #              desc="Loading the models")
-    #     )
-    #     # Generate the images
-    #     # TODO: remove/find better way for image indexing
-    #     pool.starmap(
-    #         generate,
-    #         tqdm(zip(repeat(args), range(image_args['count'])), total=image_args['count'], desc="Generating Images")
-    #     )
-    #     pool.close()
-    # else:
-    #     for i in range(image_args['count']):
-    #         # Generate the images
-    #         generate(args, i)
+    if args['parallel']:
+        pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
+        # args['models'] = pool.starmap(
+        #     Model,
+        #     tqdm(zip(repeat(args), files, [args['ooi'] in f for f in files]), total=len(files),
+        #          desc="Loading the models")
+        # )
+        # Generate the images
+        # TODO: remove/find better way for image indexing
+        pool.starmap(
+            generate,
+            tqdm(zip(repeat(args), range(image_args['count'])), total=image_args['count'], desc="Generating Images")
+        )
+        pool.close()
+    else:
+        for i in range(image_args['count']):
+            # Generate the images
+            generate(args, i)
 
 
 def argument_parser():
