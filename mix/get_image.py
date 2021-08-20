@@ -1,30 +1,24 @@
 import json
-import multiprocessing as mp
 import os
-import random
-from argparse import ArgumentParser
-from itertools import repeat
 from pathlib import Path
 from time import time
 
 import numpy as np
-from PIL import Image as Im, ImageDraw
-from tqdm import tqdm
+from PIL import Image as Im
 
 from xray.model import Model
 from xray.util import get_background, channel_wise_gaussian
 
 
 def save_image(canvas, sigma, image_size, output_file):
-    img = Im.fromarray(
+    Im.fromarray(
         (
                 channel_wise_gaussian(
                     image=get_background(canvas)[::-1, :, :],
                     sigmas=sigma
                 ) * 255
         ).astype('uint8')
-    )
-    img.resize(image_size).save(output_file)
+    ).resize(image_size).save(output_file)
 
 
 def generate(args, id):
@@ -81,7 +75,8 @@ def generate(args, id):
         positions.append([ind, x, y, z])
 
     # Place the objects
-
+    backgrounds = [get_background(np.ones_like(canvas)) for canvas in canvases]
+    canvases = [b.copy() for b in backgrounds]
     image_args = args['image']
     for obj_id, position in enumerate(positions):
         ind, x, y, z = position
@@ -98,11 +93,11 @@ def generate(args, id):
                                                               ] * xray_image[2]
 
         # save images with single object
-        empty_canvas = np.ones_like(canvases[0])
-        empty_canvas[z:z+image_height, x:x+image_width] = empty_canvas[
-                                                          z:z+image_height,
-                                                          x:x+image_width
-                                                          ]*xray_image[2]
+        empty_canvas = backgrounds[0].copy()
+        empty_canvas[z:z + image_height, x:x + image_width] = empty_canvas[
+                                                              z:z + image_height,
+                                                              x:x + image_width
+                                                              ] * xray_image[2]
         save_image(
             empty_canvas,
             args['sigma'],
@@ -118,7 +113,7 @@ def generate(args, id):
                                                               ] * xray_image[1]
 
         # save images with single object
-        empty_canvas = np.ones_like(canvases[1])
+        empty_canvas = backgrounds[1].copy()
         empty_canvas[z:z + image_height, y:y + image_width] = empty_canvas[
                                                               z:z + image_height,
                                                               y:y + image_width
@@ -138,7 +133,7 @@ def generate(args, id):
                                                              ] * xray_image[0]
 
         # save images with single object
-        empty_canvas = np.ones_like(canvases[2])
+        empty_canvas = backgrounds[2].copy()
         empty_canvas[x:x + image_height, y:y + image_width] = empty_canvas[
                                                               x:x + image_height,
                                                               y:y + image_width
@@ -149,8 +144,6 @@ def generate(args, id):
             image_size_z,
             os.path.join(image_args['dir'], f"zview/{id:06d}_{obj_id}.png")
         )
-
-
 
         counter += 1
 
