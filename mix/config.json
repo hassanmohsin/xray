@@ -3,8 +3,10 @@
   "voxel_dir": "./voxels",
   "objects": [
     "j-pipe_wrench_metal",
-    "hat_leather"
+    "hat_leather",
+    "pick-x_metal"
   ],
+  "random_packing": true,
   "scale": 2.0,
   "rotated": true,
   "box_length": 1000,
