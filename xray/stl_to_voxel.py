@@ -14,6 +14,7 @@ from xray.util import read_stl, get_voxels, crop_model
 
 
 def stl_to_voxel(stl_file, args):
+    np.random.seed(int.from_bytes(os.urandom(4), byteorder='little'))
     voxel_file = os.path.join(
         os.path.join(args['voxel_dir'],
                      f"{os.path.split(stl_file)[1][:-4]}_{args['scale']}_{str(args['rotated']).lower()}"))
