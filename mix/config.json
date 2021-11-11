@@ -1,0 +1,28 @@
+{
+  "stl_dir": "./stls",
+  "voxel_dir": "./voxels",
+  "objects": [
+    "j-pipe_wrench_metal",
+    "hat_leather",
+    "pick-x_metal"
+  ],
+  "random_packing": true,
+  "scale": 2.0,
+  "rotated": true,
+  "box_length": 1000,
+  "box_width": 1000,
+  "box_height": 500,
+  "image": {
+    "dir": "./images",
+    "xview": true,
+    "yview": true,
+    "zview": true,
+    "count": 24,
+    "resize_factor": 1.0
+  },
+  "parallel": true,
+  "nproc": -1,
+  "gap": 0,
+  "stride": 50,
+  "sigma": [8, 5, 1]
+}

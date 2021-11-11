@@ -4,10 +4,12 @@ import os
 import random
 from argparse import ArgumentParser
 from itertools import repeat
+from pathlib import Path
 from time import time
 
 import numpy as np
 from PIL import Image as Im, ImageDraw
+from tqdm import tqdm
 
 from .model import Model
 from .util import get_background, channel_wise_gaussian
@@ -25,9 +27,11 @@ def generate(args, id):
     box_width = args['box_width'] + 2 * args['gap']
 
     # Xray images along 3 different axes (x, y, z)
-    canvases = [np.ones((args['box_height'], args['box_length'], 3)),  # From longer side
-                np.ones((args['box_height'], args['box_width'], 3)),  # From wider side
-                np.ones((args['box_length'], args['box_width'], 3))]  # From top
+    canvases = [
+        np.ones((args['box_height'], args['box_length'], 3)),  # From longer side
+        np.ones((args['box_height'], args['box_width'], 3)),  # From wider side
+        np.ones((args['box_length'], args['box_width'], 3))  # From top
+    ]
 
     image_size_x = tuple(int(t * args['image']['resize_factor']) for t in canvases[0].shape[::-1][1:])
     image_size_y = tuple(int(t * args['image']['resize_factor']) for t in canvases[1].shape[::-1][1:])
@@ -45,7 +49,7 @@ def generate(args, id):
     rotations = np.random.randint(2, size=len(models))
     ooi_rotation = False
 
-    print(f"BOX {id + 1}: Packing objects...")
+    # print(f"BOX {id + 1}: Packing objects...")
     # Find the object positions
     # Place 4 objects in 4 corners
     # TODO: update `ground` and `elevation` for the following four placement
@@ -95,29 +99,37 @@ def generate(args, id):
         image_height, image_width = xray_image[2].shape[:2]
         canvases[0][z: z + image_height, x:x + image_width] = canvases[0][
                                                               z: z + image_height,
-                                                              x:x + image_width] * \
-                                                              xray_image[2]
+                                                              x:x + image_width
+                                                              ] * xray_image[2]
 
         if models[ind].ooi:
-            ooi_coordinates['x'] = [(x, canvases[0].shape[0] - (z + image_height)),
-                                    (x + image_width, canvases[0].shape[0] - z)]
+            ooi_coordinates['x'] = [
+                (x, canvases[0].shape[0] - (z + image_height)),
+                (x + image_width, canvases[0].shape[0] - z)
+            ]
 
         # View from wider side
         image_height, image_width = xray_image[1].shape[:2]
         canvases[1][z: z + image_height, y:y + image_width] = canvases[1][
                                                               z: z + image_height,
-                                                              y:y + image_width] * \
-                                                              xray_image[1]
+                                                              y:y + image_width
+                                                              ] * xray_image[1]
         if models[ind].ooi:
-            ooi_coordinates['y'] = [(y, canvases[1].shape[0] - (z + image_height)),
-                                    (y + image_width, canvases[1].shape[0] - z)]
+            ooi_coordinates['y'] = [
+                (y, canvases[1].shape[0] - (z + image_height)),
+                (y + image_width, canvases[1].shape[0] - z)
+            ]
         # View from top
         image_height, image_width = xray_image[0].shape[:2]
-        canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
-                                                             y:y + image_width] * xray_image[0]
+        canvases[2][x:x + image_height, y:y + image_width] = canvases[2][
+                                                             x:x + image_height,
+                                                             y:y + image_width
+                                                             ] * xray_image[0]
         if models[ind].ooi:
-            ooi_coordinates['z'] = [(y, canvases[2].shape[0] - (x + image_height)),
-                                    (y + image_width, canvases[2].shape[0] - x)]
+            ooi_coordinates['z'] = [
+                (y, canvases[2].shape[0] - (x + image_height)),
+                (y + image_width, canvases[2].shape[0] - x)
+            ]
 
         if models[ind].ooi:
             ooi = [x, y, z]
@@ -129,10 +141,10 @@ def generate(args, id):
         x, y, z = ooi
     else:
         # TODO: Force packing the ooi into the box
-        print(f"BOX {id + 1}: The object of interest wasn't packed, no image was generated, exiting...")
+        # print(f"BOX {id + 1}: The object of interest wasn't packed, no image was generated, exiting...")
         return
 
-    print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
+    # print(f"BOX {id + 1}: Packed {counter} objects in the box. Generating images...")
 
     # TODO: avoid repetitive gaussian filtering
     # Save images with and without bounding boxes
@@ -153,7 +165,13 @@ def generate(args, id):
     image_args = args['image']
     if image_args['xview']:
         img = Im.fromarray(
-            (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (
+                    channel_wise_gaussian(
+                        image=get_background(canvases[0])[::-1, :, :],
+                        sigmas=args['sigma']
+                    ) * 255
+            ).astype('uint8')
+        )
         if image_args['ooi']:
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"ooi/xview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -167,7 +185,13 @@ def generate(args, id):
 
     if image_args['yview']:
         img = Im.fromarray(
-            (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (
+                    channel_wise_gaussian(
+                        image=get_background(canvases[1])[::-1, :, :],
+                        sigmas=args['sigma']
+                    ) * 255
+            ).astype('uint8')
+        )
         if image_args['ooi']:
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"ooi/yview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -181,7 +205,13 @@ def generate(args, id):
 
     if image_args['zview']:
         img = Im.fromarray(
-            (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+            (
+                    channel_wise_gaussian(
+                        image=get_background(canvases[2])[::-1, :, :],
+                        sigmas=args['sigma']
+                    ) * 255
+            ).astype('uint8')
+        )
         if image_args['ooi']:
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"ooi/zview/{id:06d}.png"))
         if image_args['bounding_box']:
@@ -203,7 +233,13 @@ def generate(args, id):
             canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                                   x:x + image_width] / ooi_model.images[2]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[0])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"no_ooi/xview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['xview']:
@@ -211,7 +247,13 @@ def generate(args, id):
             canvases[0][z: z + image_height, x:x + image_width] = canvases[0][z: z + image_height,
                                                                   x:x + image_width] * ooi_model.custom_color_images[2]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[0])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[0])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_x).save(os.path.join(image_args['dir'], f"custom_ooi/xview/{id:06d}.png"))
 
         if image_args['no_ooi'] and image_args['yview']:
@@ -219,7 +261,13 @@ def generate(args, id):
             canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                                   y:y + image_width] / ooi_model.images[1]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[1])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"no_ooi/yview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['yview']:
@@ -227,7 +275,13 @@ def generate(args, id):
             canvases[1][z: z + image_height, y:y + image_width] = canvases[1][z: z + image_height,
                                                                   y:y + image_width] * ooi_model.custom_color_images[1]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[1])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[1])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_y).save(os.path.join(image_args['dir'], f"custom_ooi/yview/{id:06d}.png"))
 
         if image_args['no_ooi'] and image_args['zview']:
@@ -235,7 +289,13 @@ def generate(args, id):
             canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                                  y:y + image_width] / ooi_model.images[0]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[2])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"no_ooi/zview/{id:06d}.png"))
 
         if image_args['custom_ooi'] and image_args['zview']:
@@ -243,7 +303,13 @@ def generate(args, id):
             canvases[2][x:x + image_height, y:y + image_width] = canvases[2][x:x + image_height,
                                                                  y:y + image_width] * ooi_model.custom_color_images[0]
             img = Im.fromarray(
-                (channel_wise_gaussian(get_background(canvases[2])[::-1, :, :], args['sigma']) * 255).astype('uint8'))
+                (
+                        channel_wise_gaussian(
+                            image=get_background(canvases[2])[::-1, :, :],
+                            sigmas=args['sigma']
+                        ) * 255
+                ).astype('uint8')
+            )
             img.resize(image_size_z).save(os.path.join(image_args['dir'], f"custom_ooi/zview/{id:06d}.png"))
 
 
@@ -264,23 +330,23 @@ def main(args):
     if image_args['ooi']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(ooi_dir, v))
+                Path(os.path.join(ooi_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['no_ooi']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(no_ooi_dir, v))
+                Path(os.path.join(no_ooi_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['custom_ooi']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(custom_ooi_dir, v))
+                Path(os.path.join(custom_ooi_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['bounding_box']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(bounding_box_dir, v))
+                Path(os.path.join(bounding_box_dir, v)).mkdir(parents=True, exist_ok=True)
     if image_args['annotations']:
         for v in views_dir:
             if args['image'][v]:
-                os.makedirs(os.path.join(annotations_dir, v))
+                Path(os.path.join(annotations_dir, v)).mkdir(parents=True, exist_ok=True)
 
     # TODO: Share these variables among the processes instead of passing as an argument
     # TODO: assign the variables directly to args
@@ -294,9 +360,17 @@ def main(args):
 
     if args['parallel']:
         pool = mp.Pool(mp.cpu_count() if args['nproc'] == -1 else min(mp.cpu_count(), args['nproc']))
+        args['models'] = pool.starmap(
+            Model,
+            tqdm(zip(repeat(args), files, [args['ooi'] in f for f in files]), total=len(files),
+                 desc="Loading the models")
+        )
         # Generate the images
         # TODO: remove/find better way for image indexing
-        pool.starmap(generate, zip(repeat(args), range(image_args['count'])))
+        pool.starmap(
+            generate,
+            tqdm(zip(repeat(args), range(image_args['count'])), total=image_args['count'], desc="Generating Images")
+        )
         pool.close()
     else:
         for i in range(image_args['count']):
@@ -306,8 +380,7 @@ def main(args):
 
 def argument_parser():
     parser = ArgumentParser(description='Convert 3D models to false-color xray images')
-    parser.add_argument('--input', type=str, required=True, action='store',
-                        help="JSON input")
+    parser.add_argument('--input', type=str, required=True, action='store', help="JSON input")
     args = parser.parse_args()
     if not os.path.isfile(args.input):
         raise FileNotFoundError("Input {args.input} not found.")
